@@ -25,10 +25,16 @@ export default function CommunicationScreen() {
     markAnnouncementRead,
     sendMessage,
     markMessageRead,
-    deleteMessage
+    deleteMessage,
+    markCommunicationTabOpened
   } = useApp();
   
   const [activeTab, setActiveTab] = useState<'polls' | 'announcements' | 'messages'>('polls');
+  
+  const handleTabChange = async (tab: 'polls' | 'announcements' | 'messages') => {
+    setActiveTab(tab);
+    await markCommunicationTabOpened(tab);
+  };
   const [replyModalVisible, setReplyModalVisible] = useState(false);
   const [newMessageModalVisible, setNewMessageModalVisible] = useState(false);
   const [replyContent, setReplyContent] = useState("");
@@ -103,7 +109,7 @@ export default function CommunicationScreen() {
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'polls' && styles.activeTab]}
-          onPress={() => setActiveTab('polls')}
+          onPress={() => handleTabChange('polls')}
         >
           <Calendar color={activeTab === 'polls' ? '#1B5E20' : '#666'} size={20} />
           <Text style={[styles.tabText, activeTab === 'polls' && styles.activeTabText]}>
@@ -113,7 +119,7 @@ export default function CommunicationScreen() {
         
         <TouchableOpacity
           style={[styles.tab, activeTab === 'announcements' && styles.activeTab]}
-          onPress={() => setActiveTab('announcements')}
+          onPress={() => handleTabChange('announcements')}
         >
           <Bell color={activeTab === 'announcements' ? '#1B5E20' : '#666'} size={20} />
           <Text style={[styles.tabText, activeTab === 'announcements' && styles.activeTabText]}>
@@ -123,7 +129,7 @@ export default function CommunicationScreen() {
         
         <TouchableOpacity
           style={[styles.tab, activeTab === 'messages' && styles.activeTab]}
-          onPress={() => setActiveTab('messages')}
+          onPress={() => handleTabChange('messages')}
         >
           <MessageSquare color={activeTab === 'messages' ? '#1B5E20' : '#666'} size={20} />
           <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>

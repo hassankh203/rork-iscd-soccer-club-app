@@ -38,6 +38,8 @@ interface AppState {
   deleteMessage: (messageId: string) => Promise<void>;
   // Media
   uploadMedia: (url: string, type: 'image' | 'video', caption?: string) => Promise<void>;
+  // Communication tab management
+  markCommunicationTabOpened: (tabType: 'polls' | 'announcements' | 'messages') => Promise<void>;
   // Helpers
   getTeamRoster: (team: 'A' | 'B') => Kid[];
   refreshData: () => Promise<void>;
@@ -111,6 +113,18 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       }
     ];
     
+    // Create demo messages
+    const demoMessages: Message[] = [
+      {
+        id: 'demo-message-1',
+        fromUserId: 'admin',
+        toUserId: 'demo-parent',
+        content: 'Welcome to ISCD! Please let us know if you have any questions about your children\'s registration or upcoming training sessions.',
+        createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+        read: false
+      }
+    ];
+    
     // Create demo media
     const demoMedia: Media[] = [
       {
@@ -127,6 +141,7 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       AsyncStorage.setItem('kids', JSON.stringify(demoKids)),
       AsyncStorage.setItem('announcements', JSON.stringify(demoAnnouncements)),
       AsyncStorage.setItem('trainingPolls', JSON.stringify(demoPolls)),
+      AsyncStorage.setItem('messages', JSON.stringify(demoMessages)),
       AsyncStorage.setItem('media', JSON.stringify(demoMedia))
     ]);
     
@@ -805,6 +820,39 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     calculateUnreadCounts
   ]);
   
+  const markCommunicationTabOpened = useCallback(async (tabType: 'polls' | 'announcements' | 'messages') => {
+    if (!user) return;
+    
+    try {
+      console.log('Marking communication tab as opened:', tabType);
+      
+      if (tabType === 'announcements') {
+        // Mark all unread announcements as read
+        const unreadAnnouncements = announcements.filter(a => !a.readBy.includes(user.id));
+        if (unreadAnnouncements.length > 0) {
+          const updatedAnnouncements = announcements.map(a => 
+            !a.readBy.includes(user.id) ? { ...a, readBy: [...a.readBy, user.id] } : a
+          );
+          setAnnouncements(updatedAnnouncements);
+          await AsyncStorage.setItem('announcements', JSON.stringify(updatedAnnouncements));
+        }
+      } else if (tabType === 'messages') {
+        // Mark all unread messages TO this user as read
+        const unreadMessages = messages.filter(m => m.toUserId === user.id && !m.read);
+        if (unreadMessages.length > 0) {
+          const updatedMessages = messages.map(m => 
+            m.toUserId === user.id && !m.read ? { ...m, read: true } : m
+          );
+          setMessages(updatedMessages);
+          await AsyncStorage.setItem('messages', JSON.stringify(updatedMessages));
+        }
+      }
+      // Note: polls don't auto-mark as read since they require user action
+    } catch (error) {
+      console.error('Failed to mark communication tab as opened:', error);
+    }
+  }, [user, announcements, messages]);
+  
   const refreshData = useCallback(async () => {
     await loadData();
   }, [loadData]);
@@ -832,6 +880,7 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     markMessageRead,
     deleteMessage,
     uploadMedia,
+    markCommunicationTabOpened,
     getTeamRoster,
     refreshData
   };

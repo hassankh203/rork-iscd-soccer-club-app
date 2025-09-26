@@ -22,10 +22,18 @@ export default function AdminCommunicationScreen() {
     messages,
     uploadMedia,
     trainingPolls,
-    kids
+    kids,
+    markCommunicationTabOpened
   } = useApp();
   
   const [activeTab, setActiveTab] = useState<'polls' | 'announcements' | 'messages' | 'media'>('polls');
+  
+  const handleTabChange = async (tab: 'polls' | 'announcements' | 'messages' | 'media') => {
+    setActiveTab(tab);
+    if (tab === 'messages') {
+      await markCommunicationTabOpened('messages');
+    }
+  };
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'poll' | 'announcement' | 'message' | 'media'>('poll');
   
@@ -138,7 +146,7 @@ export default function AdminCommunicationScreen() {
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'polls' && styles.activeTab]}
-          onPress={() => setActiveTab('polls')}
+          onPress={() => handleTabChange('polls')}
         >
           <Calendar color={activeTab === 'polls' ? '#D4AF37' : '#fff'} size={20} />
           <Text style={[styles.tabText, activeTab === 'polls' && styles.activeTabText]}>
@@ -148,7 +156,7 @@ export default function AdminCommunicationScreen() {
         
         <TouchableOpacity
           style={[styles.tab, activeTab === 'announcements' && styles.activeTab]}
-          onPress={() => setActiveTab('announcements')}
+          onPress={() => handleTabChange('announcements')}
         >
           <Bell color={activeTab === 'announcements' ? '#D4AF37' : '#fff'} size={20} />
           <Text style={[styles.tabText, activeTab === 'announcements' && styles.activeTabText]}>
@@ -158,7 +166,7 @@ export default function AdminCommunicationScreen() {
         
         <TouchableOpacity
           style={[styles.tab, activeTab === 'messages' && styles.activeTab]}
-          onPress={() => setActiveTab('messages')}
+          onPress={() => handleTabChange('messages')}
         >
           <MessageSquare color={activeTab === 'messages' ? '#D4AF37' : '#fff'} size={20} />
           <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
@@ -168,7 +176,7 @@ export default function AdminCommunicationScreen() {
         
         <TouchableOpacity
           style={[styles.tab, activeTab === 'media' && styles.activeTab]}
-          onPress={() => setActiveTab('media')}
+          onPress={() => handleTabChange('media')}
         >
           <Upload color={activeTab === 'media' ? '#D4AF37' : '#fff'} size={20} />
           <Text style={[styles.tabText, activeTab === 'media' && styles.activeTabText]}>
