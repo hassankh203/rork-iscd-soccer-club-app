@@ -38,6 +38,7 @@ interface AppState {
   deleteMessage: (messageId: string) => Promise<void>;
   // Media
   uploadMedia: (url: string, type: 'image' | 'video', caption?: string) => Promise<void>;
+  removeMedia: (mediaId: string) => Promise<void>;
   // Communication tab management
   markCommunicationTabOpened: (tabType: 'polls' | 'announcements' | 'messages') => Promise<void>;
   // Helpers
@@ -805,16 +806,36 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
         uploadedAt: new Date().toISOString()
       };
       
-      // Keep only the latest media item (Pic of the Week)
-      setMedia([newMedia]);
-      await AsyncStorage.setItem('media', JSON.stringify([newMedia]));
+      // Add new media to existing media array (support multiple items)
+      const updatedMedia = [...media, newMedia];
+      setMedia(updatedMedia);
+      await AsyncStorage.setItem('media', JSON.stringify(updatedMedia));
       
       console.log('Media uploaded successfully');
     } catch (error) {
       console.error('Failed to upload media:', error);
       throw error;
     }
-  }, [user]);
+  }, [user, media]);
+
+  const removeMedia = useCallback(async (mediaId: string) => {
+    if (!user || user.role !== 'admin') {
+      throw new Error('Only administrators can remove media');
+    }
+    
+    try {
+      console.log('Removing media:', mediaId);
+      
+      const updatedMedia = media.filter(m => m.id !== mediaId);
+      setMedia(updatedMedia);
+      await AsyncStorage.setItem('media', JSON.stringify(updatedMedia));
+      
+      console.log('Media removed successfully');
+    } catch (error) {
+      console.error('Failed to remove media:', error);
+      throw error;
+    }
+  }, [user, media]);
 
   const getTeamRoster = useCallback((team: 'A' | 'B') => {
     return kids.filter(k => k.team === team);
@@ -884,6 +905,7 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     markMessageRead,
     deleteMessage,
     uploadMedia,
+    removeMedia,
     markCommunicationTabOpened,
     getTeamRoster,
     refreshData

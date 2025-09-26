@@ -15,16 +15,16 @@ import { Camera, Download, Calendar, ImageIcon } from 'lucide-react-native';
 export default function ParentPicOfWeek() {
   const { media } = useApp();
   const insets = useSafeAreaInsets();
-  const currentPic = media.length > 0 ? media[0] : null;
+  const allMedia = media || [];
 
-  const handleDownload = async () => {
-    if (!currentPic) return;
+  const handleDownload = async (mediaItem: any) => {
+    if (!mediaItem) return;
 
     if (Platform.OS === 'web') {
       // For web, open image in new tab for download
       const link = document.createElement('a');
-      link.href = currentPic.url;
-      link.download = `pic-of-week-${new Date(currentPic.uploadedAt).toISOString().split('T')[0]}.jpg`;
+      link.href = mediaItem.url;
+      link.download = `pic-of-week-${new Date(mediaItem.uploadedAt).toISOString().split('T')[0]}.jpg`;
       link.target = '_blank';
       document.body.appendChild(link);
       link.click();
@@ -32,7 +32,7 @@ export default function ParentPicOfWeek() {
     } else {
       // For mobile, open in browser (user can save from there)
       // In a real app, you'd implement proper download functionality
-      console.log('Opening image for download:', currentPic.url);
+      console.log('Opening image for download:', mediaItem.url);
     }
   };
 
@@ -55,50 +55,59 @@ export default function ParentPicOfWeek() {
           <Text style={styles.subtitle}>Latest picture from ISCD</Text>
         </View>
 
-        {currentPic ? (
+        {allMedia.length > 0 ? (
           <View style={styles.picContainer}>
-            <View style={styles.imageWrapper}>
-              <Image 
-                source={{ uri: currentPic.url }} 
-                style={styles.image}
-                resizeMode="cover"
-              />
-              <TouchableOpacity 
-                style={styles.downloadButton}
-                onPress={handleDownload}
-              >
-                <Download size={20} color="#fff" />
-                <Text style={styles.downloadButtonText}>Download</Text>
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.galleryTitle}>Pictures from ISCD ({allMedia.length})</Text>
+            {allMedia.map((mediaItem, index) => (
+              <View key={mediaItem.id} style={styles.mediaItemContainer}>
+                <View style={styles.imageWrapper}>
+                  <Image 
+                    source={{ uri: mediaItem.url }} 
+                    style={styles.image}
+                    resizeMode="cover"
+                  />
+                  <TouchableOpacity 
+                    style={styles.downloadButton}
+                    onPress={() => handleDownload(mediaItem)}
+                  >
+                    <Download size={20} color="#fff" />
+                    <Text style={styles.downloadButtonText}>Download</Text>
+                  </TouchableOpacity>
+                </View>
 
-            {currentPic.caption && (
-              <View style={styles.captionContainer}>
-                <Text style={styles.caption}>{currentPic.caption}</Text>
+                {mediaItem.caption && (
+                  <View style={styles.captionContainer}>
+                    <Text style={styles.caption}>{mediaItem.caption}</Text>
+                  </View>
+                )}
+
+                <View style={styles.dateContainer}>
+                  <Calendar size={16} color="#666" />
+                  <Text style={styles.dateText}>
+                    Uploaded: {formatDate(mediaItem.uploadedAt)}
+                  </Text>
+                </View>
+
+                {index === 0 && (
+                  <View style={styles.infoContainer}>
+                    <Text style={styles.infoTitle}>About These Pictures</Text>
+                    <Text style={styles.infoText}>
+                      These are pictures shared by the ISCD administration. 
+                      You can download them to save to your device or share with family and friends.
+                    </Text>
+                  </View>
+                )}
+                
+                {index < allMedia.length - 1 && <View style={styles.mediaSeparator} />}
               </View>
-            )}
-
-            <View style={styles.dateContainer}>
-              <Calendar size={16} color="#666" />
-              <Text style={styles.dateText}>
-                Uploaded: {formatDate(currentPic.uploadedAt)}
-              </Text>
-            </View>
-
-            <View style={styles.infoContainer}>
-              <Text style={styles.infoTitle}>About This Picture</Text>
-              <Text style={styles.infoText}>
-                This is the current picture of the week shared by the ISCD administration. 
-                You can download it to save to your device or share with family and friends.
-              </Text>
-            </View>
+            ))}
           </View>
         ) : (
           <View style={styles.noPicContainer}>
             <ImageIcon size={64} color="#ccc" />
-            <Text style={styles.noPicTitle}>No Picture Available</Text>
+            <Text style={styles.noPicTitle}>No Pictures Available</Text>
             <Text style={styles.noPicText}>
-              The administration hasn&apos;t uploaded a picture of the week yet. 
+              The administration hasn&apos;t uploaded any pictures yet. 
               Check back later for updates!
             </Text>
           </View>
@@ -109,13 +118,13 @@ export default function ParentPicOfWeek() {
           <View style={styles.instructionItem}>
             <Text style={styles.instructionNumber}>1</Text>
             <Text style={styles.instructionText}>
-              View the latest picture shared by the club administration
+              View all pictures shared by the club administration
             </Text>
           </View>
           <View style={styles.instructionItem}>
             <Text style={styles.instructionNumber}>2</Text>
             <Text style={styles.instructionText}>
-              Tap the download button to save the image to your device
+              Tap the download button to save any image to your device
             </Text>
           </View>
           <View style={styles.instructionItem}>
@@ -319,5 +328,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+  },
+  galleryTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1B5E20',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  mediaItemContainer: {
+    marginBottom: 24,
+  },
+  mediaSeparator: {
+    height: 2,
+    backgroundColor: '#e0e0e0',
+    marginTop: 20,
+    borderRadius: 1,
   },
 });

@@ -13,17 +13,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '@/hooks/app-context';
+import { Media } from '@/types';
 import { Upload, Camera, Link, Trash2, Download } from 'lucide-react-native';
 
-const { width } = Dimensions.get('window');
+
 
 export default function AdminPicOfWeek() {
-  const { media, uploadMedia } = useApp();
+  const { media, uploadMedia, removeMedia } = useApp();
   const [imageUrl, setImageUrl] = useState<string>('');
   const [caption, setCaption] = useState<string>('');
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
-  const currentPic = media.length > 0 ? media[0] : null;
+  const allMedia = media || [];
 
   const handleUpload = async () => {
     if (!imageUrl.trim()) {
@@ -43,7 +44,7 @@ export default function AdminPicOfWeek() {
       await uploadMedia(imageUrl.trim(), 'image', caption.trim() || undefined);
       setImageUrl('');
       setCaption('');
-      Alert.alert('Success', 'Picture of the week uploaded successfully!');
+      Alert.alert('Success', 'Picture uploaded successfully!');
     } catch (error) {
       console.error('Upload error:', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to upload picture');
@@ -52,12 +53,10 @@ export default function AdminPicOfWeek() {
     }
   };
 
-  const handleDownload = async () => {
-    if (!currentPic) return;
-
+  const handleDownload = async (mediaItem: Media) => {
     if (Platform.OS === 'web') {
       // For web, open image in new tab
-      window.open(currentPic.url, '_blank');
+      window.open(mediaItem.url, '_blank');
     } else {
       // For mobile, show alert with URL (since we can't actually download without additional permissions)
       Alert.alert(
@@ -67,17 +66,17 @@ export default function AdminPicOfWeek() {
           { text: 'Cancel', style: 'cancel' },
           { text: 'Copy URL', onPress: () => {
             // In a real app, you'd use Clipboard API here
-            Alert.alert('URL Copied', currentPic.url);
+            Alert.alert('URL Copied', mediaItem.url);
           }}
         ]
       );
     }
   };
 
-  const handleRemove = () => {
+  const handleRemove = (mediaItem: Media) => {
     Alert.alert(
       'Remove Picture',
-      'Are you sure you want to remove the current picture of the week?',
+      'Are you sure you want to remove this picture?',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -85,10 +84,10 @@ export default function AdminPicOfWeek() {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Clear media by uploading empty array
-              await uploadMedia('', 'image');
+              await removeMedia(mediaItem.id);
               Alert.alert('Success', 'Picture removed successfully');
             } catch (error) {
+              console.error('Remove error:', error);
               Alert.alert('Error', 'Failed to remove picture');
             }
           }
@@ -98,7 +97,7 @@ export default function AdminPicOfWeek() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Camera size={32} color="#D4AF37" />
@@ -106,44 +105,49 @@ export default function AdminPicOfWeek() {
           <Text style={styles.subtitle}>Upload and manage the weekly picture</Text>
         </View>
 
-        {/* Current Picture Display */}
-        {currentPic && (
+        {/* All Uploaded Pictures */}
+        {allMedia.length > 0 && (
           <View style={styles.currentPicSection}>
-            <Text style={styles.sectionTitle}>Current Picture</Text>
-            <View style={styles.imageContainer}>
-              <Image 
-                source={{ uri: currentPic.url }} 
-                style={styles.currentImage}
-                resizeMode="cover"
-              />
-              <View style={styles.imageOverlay}>
-                <TouchableOpacity 
-                  style={styles.actionButton}
-                  onPress={handleDownload}
-                >
-                  <Download size={20} color="#fff" />
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.removeButton]}
-                  onPress={handleRemove}
-                >
-                  <Trash2 size={20} color="#fff" />
-                </TouchableOpacity>
+            <Text style={styles.sectionTitle}>Uploaded Pictures ({allMedia.length})</Text>
+            {allMedia.map((mediaItem, index) => (
+              <View key={mediaItem.id} style={styles.mediaItem}>
+                <View style={styles.imageContainer}>
+                  <Image 
+                    source={{ uri: mediaItem.url }} 
+                    style={styles.currentImage}
+                    resizeMode="cover"
+                  />
+                  <View style={styles.imageOverlay}>
+                    <TouchableOpacity 
+                      style={styles.actionButton}
+                      onPress={() => handleDownload(mediaItem)}
+                    >
+                      <Download size={20} color="#fff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.removeButton]}
+                      onPress={() => handleRemove(mediaItem)}
+                    >
+                      <Trash2 size={20} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {mediaItem.caption && (
+                  <Text style={styles.currentCaption}>{mediaItem.caption}</Text>
+                )}
+                <Text style={styles.uploadDate}>
+                  Uploaded: {new Date(mediaItem.uploadedAt).toLocaleDateString()}
+                </Text>
+                {index < allMedia.length - 1 && <View style={styles.mediaSeparator} />}
               </View>
-            </View>
-            {currentPic.caption && (
-              <Text style={styles.currentCaption}>{currentPic.caption}</Text>
-            )}
-            <Text style={styles.uploadDate}>
-              Uploaded: {new Date(currentPic.uploadedAt).toLocaleDateString()}
-            </Text>
+            ))}
           </View>
         )}
 
         {/* Upload New Picture */}
         <View style={styles.uploadSection}>
           <Text style={styles.sectionTitle}>
-            {currentPic ? 'Replace Picture' : 'Upload New Picture'}
+            Upload New Picture
           </Text>
           
           <View style={styles.inputContainer}>
@@ -176,7 +180,7 @@ export default function AdminPicOfWeek() {
           >
             <Upload size={20} color="#fff" />
             <Text style={styles.uploadButtonText}>
-              {isUploading ? 'Uploading...' : currentPic ? 'Replace Picture' : 'Upload Picture'}
+              {isUploading ? 'Uploading...' : 'Upload Picture'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -194,10 +198,10 @@ export default function AdminPicOfWeek() {
             • Images should be appropriate for all ages
           </Text>
           <Text style={styles.instructionText}>
-            • Only one picture can be active at a time
+            • Multiple pictures can be uploaded and managed
           </Text>
           <Text style={styles.instructionText}>
-            • Parents can view and download the current picture
+            • Parents can view and download all uploaded pictures
           </Text>
         </View>
 
@@ -220,7 +224,7 @@ export default function AdminPicOfWeek() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -413,5 +417,13 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     marginBottom: 8,
     textDecorationLine: 'underline',
+  },
+  mediaItem: {
+    marginBottom: 16,
+  },
+  mediaSeparator: {
+    height: 1,
+    backgroundColor: '#e0e0e0',
+    marginTop: 16,
   },
 });
