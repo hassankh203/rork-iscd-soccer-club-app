@@ -782,8 +782,12 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       throw new Error('Only administrators can upload media');
     }
     
+    // If empty URL is passed, clear the media (for removal)
     if (!url || url.trim().length === 0) {
-      throw new Error('Media URL is required');
+      setMedia([]);
+      await AsyncStorage.setItem('media', JSON.stringify([]));
+      console.log('Media cleared successfully');
+      return;
     }
     
     if (!type || !['image', 'video'].includes(type)) {
