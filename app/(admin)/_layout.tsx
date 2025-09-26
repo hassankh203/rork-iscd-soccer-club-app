@@ -13,8 +13,12 @@ function TabBarIcon({ name, color, focused }: { name: any; color: string; focuse
     messages.some(m => m.toUserId === 'admin' && !m.read);
   
   return (
-    <View style={styles.iconContainer}>
-      <Icon color={color} size={24} />
+    <View style={[styles.iconContainer, focused && styles.focusedIconContainer]}>
+      <Icon 
+        color={color} 
+        size={focused ? 28 : 26} 
+        strokeWidth={focused ? 2.5 : 2}
+      />
       {showBadge && <View style={styles.badge} />}
     </View>
   );
@@ -25,9 +29,16 @@ export default function AdminLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: '#D4AF37',
-        tabBarInactiveTintColor: '#666',
+        tabBarInactiveTintColor: '#A0A0A0',
         tabBarStyle: {
           backgroundColor: '#1B5E20',
+          borderTopWidth: 1,
+          borderTopColor: '#2E7D32',
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: 4,
         },
         headerStyle: {
           backgroundColor: '#1B5E20',
@@ -90,14 +101,25 @@ export default function AdminLayout() {
 const styles = StyleSheet.create({
   iconContainer: {
     position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  focusedIconContainer: {
+    backgroundColor: 'rgba(212, 175, 55, 0.2)',
+    transform: [{ scale: 1.05 }],
   },
   badge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FF0000',
+    top: -2,
+    right: -2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF3B30',
+    borderWidth: 2,
+    borderColor: '#1B5E20',
   },
 });
