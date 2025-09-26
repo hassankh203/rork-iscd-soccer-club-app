@@ -88,13 +88,15 @@ export default function SignInScreen() {
               <Lock color="#666" size={20} />
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder="Password (6 digits)"
                 value={password}
                 onChangeText={(text) => {
                   setPassword(text);
                   if (error) setError(null);
                 }}
                 secureTextEntry={!showPassword}
+                keyboardType="numeric"
+                maxLength={6}
                 editable={!isLoading}
               />
               <TouchableOpacity
@@ -135,13 +137,13 @@ export default function SignInScreen() {
             </View>
 
             <View style={styles.adminHint}>
-              <Text style={styles.hintText}>Admin? Use admin@iscd.org / admin123</Text>
+              <Text style={styles.hintText}>Admin? Use admin@iscd.org / 123456</Text>
             </View>
             
             <View style={styles.demoHint}>
               <Text style={styles.hintText}>Demo Parent Account:</Text>
               <Text style={styles.hintText}>Email: parent@example.com</Text>
-              <Text style={styles.hintText}>Password: Parent123!</Text>
+              <Text style={styles.hintText}>Password: 654321</Text>
             </View>
           </View>
         </ScrollView>

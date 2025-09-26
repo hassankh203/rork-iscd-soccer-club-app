@@ -77,11 +77,11 @@ const validateEmail = (email: string): boolean => {
 };
 
 const validatePassword = (password: string): { isValid: boolean; message?: string } => {
-  if (password.length < 8) {
-    return { isValid: false, message: 'Password must be at least 8 characters long' };
+  if (password.length !== 6) {
+    return { isValid: false, message: 'Password must be exactly 6 digits' };
   }
-  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-    return { isValid: false, message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' };
+  if (!/^\d{6}$/.test(password)) {
+    return { isValid: false, message: 'Password must contain only numbers (6 digits)' };
   }
   return { isValid: true };
 };
@@ -140,7 +140,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthState>(() => {
       const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
       
       // Handle admin login with default credentials
-      if (email === 'admin@iscd.org' && password === 'admin123') {
+      if (email === 'admin@iscd.org' && password === '123456') {
         console.log('Admin login detected');
         const adminUser: User = {
           id: 'admin',
@@ -161,7 +161,7 @@ export const [AuthProvider, useAuth] = createContextHook<AuthState>(() => {
       }
       
       // Handle demo parent login
-      if (email === 'parent@example.com' && password === 'Parent123!') {
+      if (email === 'parent@example.com' && password === '654321') {
         console.log('Demo parent login detected');
         const demoParent: User = {
           id: 'demo-parent',

@@ -36,13 +36,13 @@ export default function SignUpScreen() {
       return;
     }
 
-    if (password.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters and contain uppercase, lowercase, and numbers");
+    if (password.length !== 6) {
+      Alert.alert("Error", "Password must be exactly 6 digits");
       return;
     }
 
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      Alert.alert("Error", "Password must contain at least one uppercase letter, one lowercase letter, and one number");
+    if (!/^\d{6}$/.test(password)) {
+      Alert.alert("Error", "Password must contain only numbers (6 digits)");
       return;
     }
 
@@ -111,25 +111,29 @@ export default function SignUpScreen() {
               <Lock color="#666" size={20} />
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder="Password (6 digits)"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                keyboardType="numeric"
+                maxLength={6}
                 editable={!isLoading}
               />
             </View>
             <Text style={styles.passwordHint}>
-              Password must be at least 8 characters with uppercase, lowercase, and numbers
+              Password must be exactly 6 digits (numbers only)
             </Text>
 
             <View style={styles.inputContainer}>
               <Lock color="#666" size={20} />
               <TextInput
                 style={styles.input}
-                placeholder="Confirm Password"
+                placeholder="Confirm Password (6 digits)"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry
+                keyboardType="numeric"
+                maxLength={6}
                 editable={!isLoading}
               />
             </View>
