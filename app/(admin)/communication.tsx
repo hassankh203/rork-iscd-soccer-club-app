@@ -111,6 +111,18 @@ export default function AdminCommunicationScreen() {
     setModalVisible(true);
   };
 
+  const closeModal = () => {
+    setModalVisible(false);
+    setSelectedUserId("");
+    setMessageContent("");
+    setPollTitle("");
+    setPollDate("");
+    setPollDescription("");
+    setAnnouncementTitle("");
+    setAnnouncementContent("");
+    setMediaCaption("");
+  };
+
   // Calculate poll statistics
   const getPollStats = (pollId: string) => {
     const poll = trainingPolls.find(p => p.id === pollId);
@@ -213,18 +225,42 @@ export default function AdminCommunicationScreen() {
               onPress={() => openModal('message')}
             >
               <Plus color="#fff" size={20} />
-              <Text style={styles.createButtonText}>Send Message</Text>
+              <Text style={styles.createButtonText}>Send New Message</Text>
             </TouchableOpacity>
             
-            {messages.filter(m => m.fromUserId === 'admin').map(message => (
-              <View key={message.id} style={styles.messageCard}>
-                <Text style={styles.messageTo}>To: User</Text>
-                <Text style={styles.messageContent}>{message.content}</Text>
-                <Text style={styles.messageDate}>
-                  {new Date(message.createdAt).toLocaleString()}
-                </Text>
-              </View>
-            ))}
+            <Text style={styles.sectionTitle}>All Messages</Text>
+            {messages.length > 0 ? (
+              messages.map(message => (
+                <View key={message.id} style={styles.messageCard}>
+                  <View style={styles.messageHeader}>
+                    <Text style={styles.messageFrom}>
+                      {message.fromUserId === 'admin' ? 'You → User' : 'User → You'}
+                    </Text>
+                    {!message.read && message.toUserId === 'admin' && (
+                      <View style={styles.unreadDot} />
+                    )}
+                  </View>
+                  <Text style={styles.messageContent}>{message.content}</Text>
+                  <Text style={styles.messageDate}>
+                    {new Date(message.createdAt).toLocaleString()}
+                  </Text>
+                  {message.fromUserId !== 'admin' && (
+                    <TouchableOpacity 
+                      style={styles.replyButton}
+                      onPress={() => {
+                        setSelectedUserId(message.fromUserId);
+                        openModal('message');
+                      }}
+                    >
+                      <MessageSquare color="#1B5E20" size={16} />
+                      <Text style={styles.replyButtonText}>Reply</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No messages yet</Text>
+            )}
           </View>
         )}
 
@@ -249,7 +285,7 @@ export default function AdminCommunicationScreen() {
       >
         <Pressable 
           style={styles.modalOverlay}
-          onPress={() => setModalVisible(false)}
+          onPress={closeModal}
         >
           <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             {modalType === 'poll' && (
@@ -306,13 +342,22 @@ export default function AdminCommunicationScreen() {
 
             {modalType === 'message' && (
               <>
-                <Text style={styles.modalTitle}>Send Message</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="User ID"
-                  value={selectedUserId}
-                  onChangeText={setSelectedUserId}
-                />
+                <Text style={styles.modalTitle}>
+                  {selectedUserId ? 'Reply to User' : 'Send New Message'}
+                </Text>
+                {!selectedUserId && (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="User ID (e.g., demo-parent)"
+                    value={selectedUserId}
+                    onChangeText={setSelectedUserId}
+                  />
+                )}
+                {selectedUserId && (
+                  <View style={styles.recipientInfo}>
+                    <Text style={styles.recipientLabel}>To: {selectedUserId}</Text>
+                  </View>
+                )}
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Message"
@@ -322,6 +367,7 @@ export default function AdminCommunicationScreen() {
                   numberOfLines={4}
                 />
                 <TouchableOpacity style={styles.submitButton} onPress={handleSendMessage}>
+                  <Send color="#fff" size={18} />
                   <Text style={styles.submitButtonText}>Send Message</Text>
                 </TouchableOpacity>
               </>
@@ -500,5 +546,61 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 16,
+  },
+  messageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  messageFrom: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1B5E20',
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF0000',
+  },
+  replyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    padding: 8,
+    borderRadius: 6,
+    gap: 4,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  replyButtonText: {
+    color: '#1B5E20',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  recipientInfo: {
+    backgroundColor: '#E8F5E8',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  recipientLabel: {
+    fontSize: 14,
+    color: '#1B5E20',
+    fontWeight: '500',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    padding: 40,
   },
 });

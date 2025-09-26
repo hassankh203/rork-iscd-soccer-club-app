@@ -30,7 +30,9 @@ export default function CommunicationScreen() {
   
   const [activeTab, setActiveTab] = useState<'polls' | 'announcements' | 'messages'>('polls');
   const [replyModalVisible, setReplyModalVisible] = useState(false);
+  const [newMessageModalVisible, setNewMessageModalVisible] = useState(false);
   const [replyContent, setReplyContent] = useState("");
+  const [newMessageContent, setNewMessageContent] = useState("");
   const [selectedMessage, setSelectedMessage] = useState<typeof messages[0] | null>(null);
 
   const myKids = kids.filter(k => k.parentId === user?.id);
@@ -50,7 +52,20 @@ export default function CommunicationScreen() {
     await sendMessage('admin', replyContent);
     setReplyModalVisible(false);
     setReplyContent("");
-    Alert.alert("Success", "Message sent");
+    setSelectedMessage(null);
+    Alert.alert("Success", "Reply sent");
+  };
+
+  const handleSendNewMessage = async () => {
+    if (!newMessageContent.trim()) {
+      Alert.alert("Error", "Please enter a message");
+      return;
+    }
+
+    await sendMessage('admin', newMessageContent);
+    setNewMessageModalVisible(false);
+    setNewMessageContent("");
+    Alert.alert("Success", "Message sent to admin");
   };
 
   const handleOpenAnnouncement = async (announcement: typeof announcements[0]) => {
@@ -217,6 +232,14 @@ export default function CommunicationScreen() {
 
         {activeTab === 'messages' && (
           <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.newMessageButton}
+              onPress={() => setNewMessageModalVisible(true)}
+            >
+              <Send color="#fff" size={20} />
+              <Text style={styles.newMessageButtonText}>Send New Message to Admin</Text>
+            </TouchableOpacity>
+            
             {myMessages.length > 0 ? (
               myMessages.map(message => (
                 <TouchableOpacity
@@ -240,7 +263,10 @@ export default function CommunicationScreen() {
                 </TouchableOpacity>
               ))
             ) : (
-              <Text style={styles.emptyText}>No messages yet</Text>
+              <View>
+                <Text style={styles.emptyText}>No messages yet</Text>
+                <Text style={styles.emptySubText}>Tap the button above to send your first message to the admin</Text>
+              </View>
             )}
           </View>
         )}
@@ -281,6 +307,7 @@ export default function CommunicationScreen() {
                 onPress={() => {
                   setReplyModalVisible(false);
                   setReplyContent("");
+                  setSelectedMessage(null);
                 }}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -289,6 +316,51 @@ export default function CommunicationScreen() {
               <TouchableOpacity
                 style={[styles.modalButton, styles.sendButton]}
                 onPress={handleReplyMessage}
+              >
+                <Send color="#fff" size={18} />
+                <Text style={styles.sendButtonText}>Send</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={newMessageModalVisible}
+        onRequestClose={() => setNewMessageModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setNewMessageModalVisible(false)}
+        >
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>Send Message to Admin</Text>
+            
+            <TextInput
+              style={styles.replyInput}
+              placeholder="Type your message..."
+              value={newMessageContent}
+              onChangeText={setNewMessageContent}
+              multiline
+              numberOfLines={4}
+            />
+            
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setNewMessageModalVisible(false);
+                  setNewMessageContent("");
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.sendButton]}
+                onPress={handleSendNewMessage}
               >
                 <Send color="#fff" size={18} />
                 <Text style={styles.sendButtonText}>Send</Text>
@@ -545,5 +617,26 @@ const styles = StyleSheet.create({
   sendButtonText: {
     color: '#fff',
     fontWeight: '600',
+  },
+  newMessageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1B5E20',
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+    marginBottom: 20,
+  },
+  newMessageButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptySubText: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
