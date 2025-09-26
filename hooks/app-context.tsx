@@ -163,14 +163,31 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
         }
       }
       
-      const [kidsData, paymentsData, feesData, pollsData, announcementsData, messagesData, mediaData] = await Promise.all([
+      // Initialize shared demo media on first load (for any user)
+      const existingSharedMedia = await AsyncStorage.getItem('sharedMedia');
+      if (!existingSharedMedia) {
+        const demoMedia: Media[] = [
+          {
+            id: 'demo-media-1',
+            url: 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800',
+            type: 'image',
+            caption: 'Team training session - Great teamwork!',
+            uploadedAt: new Date().toISOString()
+          }
+        ];
+        await AsyncStorage.setItem('sharedMedia', JSON.stringify(demoMedia));
+        await AsyncStorage.setItem('media', JSON.stringify(demoMedia));
+      }
+      
+      const [kidsData, paymentsData, feesData, pollsData, announcementsData, messagesData, mediaData, sharedMediaData] = await Promise.all([
         AsyncStorage.getItem('kids'),
         AsyncStorage.getItem('payments'),
         AsyncStorage.getItem('feeStructure'),
         AsyncStorage.getItem('trainingPolls'),
         AsyncStorage.getItem('announcements'),
         AsyncStorage.getItem('messages'),
-        AsyncStorage.getItem('media')
+        AsyncStorage.getItem('media'),
+        AsyncStorage.getItem('sharedMedia')
       ]);
 
       // Parse and validate data with error handling
@@ -241,8 +258,10 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       }
       
       try {
-        if (mediaData) {
-          const parsedMedia = JSON.parse(mediaData);
+        // Prioritize shared media over local media for cross-user sync
+        const mediaToUse = sharedMediaData || mediaData;
+        if (mediaToUse) {
+          const parsedMedia = JSON.parse(mediaToUse);
           setMedia(Array.isArray(parsedMedia) ? parsedMedia : []);
         }
       } catch (e) {
@@ -787,6 +806,7 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     if (!url || url.trim().length === 0) {
       setMedia([]);
       await AsyncStorage.setItem('media', JSON.stringify([]));
+      await AsyncStorage.setItem('sharedMedia', JSON.stringify([]));
       console.log('Media cleared successfully');
       return;
     }
@@ -809,9 +829,12 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       // Add new media to existing media array (support multiple items)
       const updatedMedia = [...media, newMedia];
       setMedia(updatedMedia);
-      await AsyncStorage.setItem('media', JSON.stringify(updatedMedia));
       
-      console.log('Media uploaded successfully');
+      // Store in both regular media and shared media for cross-user access
+      await AsyncStorage.setItem('media', JSON.stringify(updatedMedia));
+      await AsyncStorage.setItem('sharedMedia', JSON.stringify(updatedMedia));
+      
+      console.log('Media uploaded successfully and shared across all users');
     } catch (error) {
       console.error('Failed to upload media:', error);
       throw error;
@@ -828,9 +851,12 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       
       const updatedMedia = media.filter(m => m.id !== mediaId);
       setMedia(updatedMedia);
-      await AsyncStorage.setItem('media', JSON.stringify(updatedMedia));
       
-      console.log('Media removed successfully');
+      // Update both regular media and shared media
+      await AsyncStorage.setItem('media', JSON.stringify(updatedMedia));
+      await AsyncStorage.setItem('sharedMedia', JSON.stringify(updatedMedia));
+      
+      console.log('Media removed successfully from all users');
     } catch (error) {
       console.error('Failed to remove media:', error);
       throw error;

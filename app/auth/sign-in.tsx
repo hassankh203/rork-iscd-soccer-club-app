@@ -144,6 +144,7 @@ export default function SignInScreen() {
               <Text style={styles.hintText}>Demo Parent Account:</Text>
               <Text style={styles.hintText}>Email: parent@example.com</Text>
               <Text style={styles.hintText}>Password: 654321</Text>
+              <Text style={styles.hintText}>Note: Password must be exactly 6 digits</Text>
             </View>
           </View>
         </ScrollView>

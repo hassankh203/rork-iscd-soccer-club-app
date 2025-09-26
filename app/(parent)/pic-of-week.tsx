@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,26 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '@/hooks/app-context';
-import { Camera, Download, Calendar, ImageIcon } from 'lucide-react-native';
+import { Camera, Download, Calendar, ImageIcon, RefreshCw } from 'lucide-react-native';
 
 export default function ParentPicOfWeek() {
-  const { media } = useApp();
+  const { media, refreshData } = useApp();
   const insets = useSafeAreaInsets();
   const allMedia = media || [];
+
+  const onRefresh = React.useCallback(async () => {
+    try {
+      await refreshData();
+      console.log('Media refreshed successfully');
+    } catch (error) {
+      console.error('Failed to refresh media:', error);
+    }
+  }, [refreshData]);
+
+  // Auto-refresh when component mounts to ensure latest media is loaded
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
 
   const handleDownload = async (mediaItem: any) => {
     if (!mediaItem) return;
@@ -48,11 +62,19 @@ export default function ParentPicOfWeek() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
-          <Camera size={32} color="#1B5E20" />
+          <View style={styles.headerTop}>
+            <Camera size={32} color="#1B5E20" />
+            <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
+              <RefreshCw size={24} color="#1B5E20" />
+            </TouchableOpacity>
+          </View>
           <Text style={styles.title}>Pic of the Week</Text>
-          <Text style={styles.subtitle}>Latest picture from ISCD</Text>
+          <Text style={styles.subtitle}>Latest pictures from ISCD</Text>
         </View>
 
         {allMedia.length > 0 ? (
@@ -108,8 +130,12 @@ export default function ParentPicOfWeek() {
             <Text style={styles.noPicTitle}>No Pictures Available</Text>
             <Text style={styles.noPicText}>
               The administration hasn&apos;t uploaded any pictures yet. 
-              Check back later for updates!
+              Pull down to refresh or check back later for updates!
             </Text>
+            <TouchableOpacity onPress={onRefresh} style={styles.refreshButtonLarge}>
+              <RefreshCw size={20} color="#1B5E20" />
+              <Text style={styles.refreshButtonText}>Refresh</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -158,6 +184,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 12,
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#E8F5E8',
   },
   title: {
     fontSize: 28,
@@ -344,5 +382,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
     marginTop: 20,
     borderRadius: 1,
+  },
+  refreshButtonLarge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1B5E20',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 16,
+    gap: 8,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
