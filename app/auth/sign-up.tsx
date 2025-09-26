@@ -1,0 +1,240 @@
+import { useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  ActivityIndicator
+} from "react-native";
+import { router } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Mail, Lock, User, Phone } from "lucide-react-native";
+import { useAuth } from "@/hooks/auth-context";
+
+export default function SignUpScreen() {
+  const { signUp } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignUp = async () => {
+    if (!email || !password || !confirmPassword || !name || !phone) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    if (password.length < 8) {
+      Alert.alert("Error", "Password must be at least 8 characters and contain uppercase, lowercase, and numbers");
+      return;
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      Alert.alert("Error", "Password must contain at least one uppercase letter, one lowercase letter, and one number");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await signUp(email, password, name, phone);
+      router.replace('/');
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to create account");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardView}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Join ISCD today</Text>
+          </View>
+
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <User color="#666" size={20} />
+              <TextInput
+                style={styles.input}
+                placeholder="Full Name"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+                editable={!isLoading}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Mail color="#666" size={20} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!isLoading}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Phone color="#666" size={20} />
+              <TextInput
+                style={styles.input}
+                placeholder="Phone Number"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                editable={!isLoading}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Lock color="#666" size={20} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                editable={!isLoading}
+              />
+            </View>
+            <Text style={styles.passwordHint}>
+              Password must be at least 8 characters with uppercase, lowercase, and numbers
+            </Text>
+
+            <View style={styles.inputContainer}>
+              <Lock color="#666" size={20} />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                editable={!isLoading}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.signUpButton, isLoading && styles.disabledButton]}
+              onPress={handleSignUp}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.signUpButtonText}>Sign Up</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => router.replace('/auth/sign-in')}>
+                <Text style={styles.linkText}>Sign In</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 20,
+  },
+  header: {
+    marginBottom: 40,
+    marginTop: 20,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#1B5E20',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+  },
+  form: {
+    gap: 20,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    gap: 12,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 16,
+  },
+  signUpButton: {
+    backgroundColor: '#1B5E20',
+    padding: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  disabledButton: {
+    opacity: 0.7,
+  },
+  signUpButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+  },
+  footerText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  linkText: {
+    color: '#1B5E20',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  passwordHint: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: -10,
+    marginLeft: 4,
+  },
+});
