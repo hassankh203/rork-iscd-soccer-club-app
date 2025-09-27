@@ -1,6 +1,6 @@
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export default function DebugSupabaseScreen() {
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -38,6 +38,31 @@ export default function DebugSupabaseScreen() {
           <Text style={styles.detail}>
             Key Valid: {supabaseAnonKey && supabaseAnonKey.length > 100 && supabaseAnonKey.startsWith('eyJ') ? '✅' : '❌'}
           </Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Test Connection</Text>
+          <TouchableOpacity
+            style={styles.testButton}
+            onPress={async () => {
+              try {
+                console.log('Testing Supabase connection...');
+                const { data, error } = await supabase.auth.getSession();
+                console.log('Session test result:', { data, error });
+                
+                if (error) {
+                  Alert.alert('Connection Test', `Error: ${error.message}`);
+                } else {
+                  Alert.alert('Connection Test', 'Connection successful! ✅');
+                }
+              } catch (err) {
+                console.error('Connection test failed:', err);
+                Alert.alert('Connection Test', `Failed: ${err}`);
+              }
+            }}
+          >
+            <Text style={styles.testButtonText}>Test Connection</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -102,5 +127,16 @@ const styles = StyleSheet.create({
   detail: {
     fontSize: 14,
     marginVertical: 2,
+  },
+  testButton: {
+    backgroundColor: '#1B5E20',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

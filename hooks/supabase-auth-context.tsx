@@ -157,9 +157,37 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
 
       if (error) {
         console.error('Supabase sign in error:', error);
-        const errorMessage = typeof error === 'string' ? error : 
-                           error?.message || 
-                           (typeof error === 'object' ? JSON.stringify(error) : 'Unknown error occurred');
+        
+        // Handle specific error types
+        let errorMessage: string;
+        if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        } else if (typeof error === 'object') {
+          // Handle common Supabase error patterns
+          if (error.error_description) {
+            errorMessage = error.error_description;
+          } else if (error.msg) {
+            errorMessage = error.msg;
+          } else {
+            errorMessage = JSON.stringify(error);
+          }
+        } else {
+          errorMessage = 'Unknown error occurred during sign in';
+        }
+        
+        // Provide user-friendly error messages for common issues
+        if (errorMessage.includes('Invalid login credentials')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (errorMessage.includes('Email not confirmed')) {
+          errorMessage = 'Please check your email and click the confirmation link before signing in.';
+        } else if (errorMessage.includes('Too many requests')) {
+          errorMessage = 'Too many sign-in attempts. Please wait a moment and try again.';
+        } else if (errorMessage.includes('Supabase not configured')) {
+          errorMessage = 'Authentication service is not properly configured. Please contact support.';
+        }
+        
         throw new Error(errorMessage);
       }
 
@@ -218,9 +246,37 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
 
       if (error) {
         console.error('Supabase sign up error:', error);
-        const errorMessage = typeof error === 'string' ? error : 
-                           error?.message || 
-                           (typeof error === 'object' ? JSON.stringify(error) : 'Unknown error occurred');
+        
+        // Handle specific error types
+        let errorMessage: string;
+        if (typeof error === 'string') {
+          errorMessage = error;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        } else if (typeof error === 'object') {
+          // Handle common Supabase error patterns
+          if (error.error_description) {
+            errorMessage = error.error_description;
+          } else if (error.msg) {
+            errorMessage = error.msg;
+          } else {
+            errorMessage = JSON.stringify(error);
+          }
+        } else {
+          errorMessage = 'Unknown error occurred during sign up';
+        }
+        
+        // Provide user-friendly error messages for common issues
+        if (errorMessage.includes('User already registered')) {
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (errorMessage.includes('Password should be at least')) {
+          errorMessage = 'Password must be at least 6 characters long.';
+        } else if (errorMessage.includes('Invalid email')) {
+          errorMessage = 'Please enter a valid email address.';
+        } else if (errorMessage.includes('Supabase not configured')) {
+          errorMessage = 'Authentication service is not properly configured. Please contact support.';
+        }
+        
         throw new Error(errorMessage);
       }
 
