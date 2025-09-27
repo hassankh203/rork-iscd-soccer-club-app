@@ -161,15 +161,23 @@ export default function SignInScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.adminHint}>
-              <Text style={styles.hintText}>Admin? Use admin@iscd.org / 123456</Text>
-            </View>
-            
-            <View style={styles.demoHint}>
-              <Text style={styles.hintText}>Demo Parent Account:</Text>
-              <Text style={styles.hintText}>Email: parent@example.com</Text>
-              <Text style={styles.hintText}>Password: 654321</Text>
-              <Text style={styles.hintText}>Note: Password must be exactly 6 digits</Text>
+            <View style={styles.demoSection}>
+              <Text style={styles.demoTitle}>🚀 Demo Mode Active</Text>
+              <Text style={styles.demoSubtitle}>Supabase not configured - using demo accounts</Text>
+              
+              <View style={styles.demoAccount}>
+                <Text style={styles.demoAccountTitle}>👨‍💼 Admin Account</Text>
+                <Text style={styles.demoAccountText}>Email: admin@iscd.org</Text>
+                <Text style={styles.demoAccountText}>Password: 123456</Text>
+              </View>
+              
+              <View style={styles.demoAccount}>
+                <Text style={styles.demoAccountTitle}>👨‍👩‍👧‍👦 Parent Account</Text>
+                <Text style={styles.demoAccountText}>Email: parent@example.com</Text>
+                <Text style={styles.demoAccountText}>Password: 654321</Text>
+              </View>
+              
+              <Text style={styles.demoNote}>💡 To use real accounts, configure Supabase in your .env file</Text>
             </View>
 
             <TouchableOpacity
@@ -308,5 +316,53 @@ const styles = StyleSheet.create({
     color: '#1B5E20',
     fontSize: 16,
     fontWeight: '600',
+  },
+  demoSection: {
+    marginTop: 30,
+    padding: 20,
+    backgroundColor: '#F0F8FF',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#4A90E2',
+  },
+  demoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2C5282',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  demoSubtitle: {
+    fontSize: 14,
+    color: '#4A5568',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontStyle: 'italic',
+  },
+  demoAccount: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4A90E2',
+  },
+  demoAccountTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2D3748',
+    marginBottom: 4,
+  },
+  demoAccountText: {
+    fontSize: 12,
+    color: '#4A5568',
+    fontFamily: 'monospace' as const,
+  },
+  demoNote: {
+    fontSize: 12,
+    color: '#718096',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 8,
   },
 });

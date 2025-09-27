@@ -1,6 +1,6 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { User as SupabaseUser, Session, AuthError } from '@supabase/supabase-js';
 import { User } from '@/types';
 
@@ -102,6 +102,40 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
 
   const signIn = useCallback(async (email: string, password: string) => {
     console.log('Attempting sign in for:', email);
+    
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      // Demo mode - allow specific demo accounts
+      if (email.toLowerCase() === 'admin@iscd.org' && password === '123456') {
+        const demoAdmin: User = {
+          id: 'demo-admin-id',
+          email: 'admin@iscd.org',
+          name: 'Demo Admin',
+          phone: '+1234567890',
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        };
+        setUser(demoAdmin);
+        setSession({ user: demoAdmin } as any);
+        console.log('Demo admin login successful');
+        return;
+      } else if (email.toLowerCase() === 'parent@example.com' && password === '654321') {
+        const demoParent: User = {
+          id: 'demo-parent-id',
+          email: 'parent@example.com',
+          name: 'Demo Parent',
+          phone: '+1234567890',
+          role: 'parent',
+          createdAt: new Date().toISOString()
+        };
+        setUser(demoParent);
+        setSession({ user: demoParent } as any);
+        console.log('Demo parent login successful');
+        return;
+      } else {
+        throw new Error('Demo mode: Use admin@iscd.org/123456 or parent@example.com/654321');
+      }
+    }
     
     // Input validation
     if (!email || !password) {

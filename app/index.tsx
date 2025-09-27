@@ -19,6 +19,7 @@ import { MapPin, LogIn, UserPlus, Shield, BookOpen } from "lucide-react-native";
 import { useSupabaseAuth } from "@/hooks/supabase-auth-context";
 import { useHadith } from "@/hooks/hadith-context";
 import { hadiths } from "@/constants/hadiths";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 export default function HomeScreen() {
   const { user, isLoading } = useSupabaseAuth();
@@ -80,6 +81,11 @@ export default function HomeScreen() {
             />
             <Text style={styles.title}>ISCD</Text>
             <Text style={styles.subtitle}>Islamic Soccer Club of Delaware</Text>
+            {!isSupabaseConfigured() && (
+              <View style={styles.demoModeIndicator}>
+                <Text style={styles.demoModeText}>🚀 Demo Mode</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.buttonsContainer}>
@@ -329,6 +335,18 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: '#fff',
+    fontWeight: '600',
+  },
+  demoModeIndicator: {
+    backgroundColor: 'rgba(74, 144, 226, 0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 12,
+  },
+  demoModeText: {
+    color: '#fff',
+    fontSize: 12,
     fontWeight: '600',
   },
 });
