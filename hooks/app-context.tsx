@@ -44,6 +44,7 @@ interface AppState {
   // Helpers
   getTeamRoster: (team: 'A' | 'B') => Kid[];
   refreshData: () => Promise<void>;
+  clearAllData: () => Promise<void>;
 }
 
 export const [AppProvider, useApp] = createContextHook<AppState>(() => {
@@ -190,84 +191,53 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
         AsyncStorage.getItem('sharedMedia')
       ]);
 
-      // Parse and validate data with error handling
-      try {
-        if (kidsData) {
-          const parsedKids = JSON.parse(kidsData);
-          setKids(Array.isArray(parsedKids) ? parsedKids : []);
-        }
-      } catch (e) {
-        console.error('Failed to parse kids data:', e);
-        setKids([]);
-      }
-      
-      try {
-        if (paymentsData) {
-          const parsedPayments = JSON.parse(paymentsData);
-          setPayments(Array.isArray(parsedPayments) ? parsedPayments : []);
-        }
-      } catch (e) {
-        console.error('Failed to parse payments data:', e);
-        setPayments([]);
-      }
-      
-      try {
-        if (feesData) {
-          const parsedFees = JSON.parse(feesData);
-          if (parsedFees && typeof parsedFees === 'object') {
-            setFeeStructure({
-              yearlyFirstKid: parsedFees.yearlyFirstKid || 500,
-              yearlyAdditional: parsedFees.yearlyAdditional || 400,
-              monthlyFirstKid: parsedFees.monthlyFirstKid || 50,
-              monthlyAdditional: parsedFees.monthlyAdditional || 40
-            });
+      // Helper function to safely parse JSON
+      const safeJsonParse = (data: string | null, fallback: any = null) => {
+        if (!data || data.trim() === '') return fallback;
+        try {
+          // Check if data starts with valid JSON characters
+          const trimmed = data.trim();
+          if (!trimmed.startsWith('{') && !trimmed.startsWith('[') && !trimmed.startsWith('"')) {
+            console.warn('Invalid JSON format detected, clearing corrupted data');
+            return fallback;
           }
+          return JSON.parse(trimmed);
+        } catch (error) {
+          console.error('JSON parse error:', error, 'Data:', data?.substring(0, 100));
+          return fallback;
         }
-      } catch (e) {
-        console.error('Failed to parse fee structure:', e);
+      };
+
+      // Parse and validate data with better error handling
+      const parsedKids = safeJsonParse(kidsData, []);
+      setKids(Array.isArray(parsedKids) ? parsedKids : []);
+      
+      const parsedPayments = safeJsonParse(paymentsData, []);
+      setPayments(Array.isArray(parsedPayments) ? parsedPayments : []);
+      
+      const parsedFees = safeJsonParse(feesData, null);
+      if (parsedFees && typeof parsedFees === 'object') {
+        setFeeStructure({
+          yearlyFirstKid: parsedFees.yearlyFirstKid || 500,
+          yearlyAdditional: parsedFees.yearlyAdditional || 400,
+          monthlyFirstKid: parsedFees.monthlyFirstKid || 50,
+          monthlyAdditional: parsedFees.monthlyAdditional || 40
+        });
       }
       
-      try {
-        if (pollsData) {
-          const parsedPolls = JSON.parse(pollsData);
-          setTrainingPolls(Array.isArray(parsedPolls) ? parsedPolls : []);
-        }
-      } catch (e) {
-        console.error('Failed to parse training polls:', e);
-        setTrainingPolls([]);
-      }
+      const parsedPolls = safeJsonParse(pollsData, []);
+      setTrainingPolls(Array.isArray(parsedPolls) ? parsedPolls : []);
       
-      try {
-        if (announcementsData) {
-          const parsedAnnouncements = JSON.parse(announcementsData);
-          setAnnouncements(Array.isArray(parsedAnnouncements) ? parsedAnnouncements : []);
-        }
-      } catch (e) {
-        console.error('Failed to parse announcements:', e);
-        setAnnouncements([]);
-      }
+      const parsedAnnouncements = safeJsonParse(announcementsData, []);
+      setAnnouncements(Array.isArray(parsedAnnouncements) ? parsedAnnouncements : []);
       
-      try {
-        if (messagesData) {
-          const parsedMessages = JSON.parse(messagesData);
-          setMessages(Array.isArray(parsedMessages) ? parsedMessages : []);
-        }
-      } catch (e) {
-        console.error('Failed to parse messages:', e);
-        setMessages([]);
-      }
+      const parsedMessages = safeJsonParse(messagesData, []);
+      setMessages(Array.isArray(parsedMessages) ? parsedMessages : []);
       
-      try {
-        // Prioritize shared media over local media for cross-user sync
-        const mediaToUse = sharedMediaData || mediaData;
-        if (mediaToUse) {
-          const parsedMedia = JSON.parse(mediaToUse);
-          setMedia(Array.isArray(parsedMedia) ? parsedMedia : []);
-        }
-      } catch (e) {
-        console.error('Failed to parse media:', e);
-        setMedia([]);
-      }
+      // Prioritize shared media over local media for cross-user sync
+      const mediaToUse = sharedMediaData || mediaData;
+      const parsedMedia = safeJsonParse(mediaToUse, []);
+      setMedia(Array.isArray(parsedMedia) ? parsedMedia : []);
       
       console.log('App data loaded successfully');
     } catch (error) {
@@ -908,6 +878,39 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     await loadData();
   }, [loadData]);
   
+  const clearAllData = useCallback(async () => {
+    try {
+      console.log('Clearing all app data...');
+      
+      // Clear all AsyncStorage data
+      const keys = [
+        'kids', 'payments', 'feeStructure', 'trainingPolls', 
+        'announcements', 'messages', 'media', 'sharedMedia', 'users'
+      ];
+      
+      await Promise.all(keys.map(key => AsyncStorage.removeItem(key)));
+      
+      // Reset all state
+      setKids([]);
+      setPayments([]);
+      setTrainingPolls([]);
+      setAnnouncements([]);
+      setMessages([]);
+      setMedia([]);
+      setFeeStructure({
+        yearlyFirstKid: 500,
+        yearlyAdditional: 400,
+        monthlyFirstKid: 50,
+        monthlyAdditional: 40
+      });
+      
+      console.log('All app data cleared successfully');
+    } catch (error) {
+      console.error('Failed to clear app data:', error);
+      throw error;
+    }
+  }, []);
+  
   return {
     kids,
     payments,
@@ -934,6 +937,7 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     removeMedia,
     markCommunicationTabOpened,
     getTeamRoster,
-    refreshData
+    refreshData,
+    clearAllData
   };
 });

@@ -102,7 +102,16 @@ export const [AuthProvider, useAuth] = createContextHook<AuthState>(() => {
       const userData = await AsyncStorage.getItem('currentUser');
       
       if (sessionToken && userData) {
-        const parsedUser = JSON.parse(userData);
+        // Safe JSON parsing with validation
+        const trimmedData = userData.trim();
+        if (!trimmedData.startsWith('{') && !trimmedData.startsWith('[')) {
+          console.warn('Invalid user data format, clearing session');
+          await secureStorage.deleteItem('sessionToken');
+          await AsyncStorage.removeItem('currentUser');
+          return;
+        }
+        
+        const parsedUser = JSON.parse(trimmedData);
         // Verify session is still valid (you could add expiration logic here)
         console.log('User session found:', parsedUser.email);
         setUser(parsedUser);
@@ -137,7 +146,18 @@ export const [AuthProvider, useAuth] = createContextHook<AuthState>(() => {
     
     try {
       const usersData = await AsyncStorage.getItem('users');
-      const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
+      let users: StoredUser[] = [];
+      if (usersData) {
+        try {
+          const trimmedData = usersData.trim();
+          if (trimmedData.startsWith('[') || trimmedData.startsWith('{')) {
+            users = JSON.parse(trimmedData);
+          }
+        } catch (e) {
+          console.error('Failed to parse users data:', e);
+          users = [];
+        }
+      }
       
       // Handle admin login with default credentials
       if (email === 'admin@iscd.org' && password === '123456') {
@@ -254,7 +274,18 @@ export const [AuthProvider, useAuth] = createContextHook<AuthState>(() => {
     
     try {
       const usersData = await AsyncStorage.getItem('users');
-      const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
+      let users: StoredUser[] = [];
+      if (usersData) {
+        try {
+          const trimmedData = usersData.trim();
+          if (trimmedData.startsWith('[') || trimmedData.startsWith('{')) {
+            users = JSON.parse(trimmedData);
+          }
+        } catch (e) {
+          console.error('Failed to parse users data:', e);
+          users = [];
+        }
+      }
       
       // Check if email already exists
       if (users.find((u: StoredUser) => u.email.toLowerCase() === email.toLowerCase())) {
@@ -338,7 +369,18 @@ export const [AuthProvider, useAuth] = createContextHook<AuthState>(() => {
     
     try {
       const usersData = await AsyncStorage.getItem('users');
-      const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
+      let users: StoredUser[] = [];
+      if (usersData) {
+        try {
+          const trimmedData = usersData.trim();
+          if (trimmedData.startsWith('[') || trimmedData.startsWith('{')) {
+            users = JSON.parse(trimmedData);
+          }
+        } catch (e) {
+          console.error('Failed to parse users data:', e);
+          users = [];
+        }
+      }
       
       // Check if new email already exists (if email is being updated)
       if (updates.email && updates.email !== user.email) {
@@ -388,7 +430,18 @@ export const [AuthProvider, useAuth] = createContextHook<AuthState>(() => {
     
     try {
       const usersData = await AsyncStorage.getItem('users');
-      const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
+      let users: StoredUser[] = [];
+      if (usersData) {
+        try {
+          const trimmedData = usersData.trim();
+          if (trimmedData.startsWith('[') || trimmedData.startsWith('{')) {
+            users = JSON.parse(trimmedData);
+          }
+        } catch (e) {
+          console.error('Failed to parse users data:', e);
+          users = [];
+        }
+      }
       
       const foundUser = users.find((u: StoredUser) => u.id === user.id);
       if (!foundUser) {
@@ -428,7 +481,18 @@ export const [AuthProvider, useAuth] = createContextHook<AuthState>(() => {
     
     try {
       const usersData = await AsyncStorage.getItem('users');
-      const users: StoredUser[] = usersData ? JSON.parse(usersData) : [];
+      let users: StoredUser[] = [];
+      if (usersData) {
+        try {
+          const trimmedData = usersData.trim();
+          if (trimmedData.startsWith('[') || trimmedData.startsWith('{')) {
+            users = JSON.parse(trimmedData);
+          }
+        } catch (e) {
+          console.error('Failed to parse users data:', e);
+          users = [];
+        }
+      }
       
       const foundUser = users.find((u: StoredUser) => u.email.toLowerCase() === email.toLowerCase());
       if (!foundUser) {
