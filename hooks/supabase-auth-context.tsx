@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { User as SupabaseUser, Session, AuthError } from '@supabase/supabase-js';
+import { User as SupabaseUser, Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { User } from '@/types';
 
 interface AuthState {
@@ -57,45 +57,77 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
 
   // Initialize auth state
   useEffect(() => {
-    console.log('Initializing Supabase auth...');
+    let isMounted = true;
     
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('Error getting session:', error);
-      } else {
-        console.log('Initial session:', session?.user?.email || 'No session');
-        setSession(session);
-        if (session?.user) {
-          setUser(mapSupabaseUserToUser(session.user));
+    const initializeAuth = async () => {
+      console.log('Initializing Supabase auth...');
+      
+      try {
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
+        if (error) {
+          console.error('Error getting session:', error);
+        } else {
+          console.log('Initial session:', session?.user?.email || 'No session');
+          setSession(session);
+          if (session?.user) {
+            setUser(mapSupabaseUserToUser(session.user));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to initialize auth:', error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
         }
       }
-      setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (event: AuthChangeEvent, session: Session | null) => {
+        if (!isMounted) return;
+        
         console.log('Auth state changed:', event, session?.user?.email || 'No user');
         setSession(session);
         
         if (session?.user) {
-          // Fetch additional user data from profiles table if it exists
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          setUser(mapSupabaseUserToUser(session.user, profile));
+          try {
+            // Fetch additional user data from profiles table if it exists
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (isMounted) {
+              setUser(mapSupabaseUserToUser(session.user, profile));
+            }
+          } catch (error) {
+            console.error('Error fetching profile:', error);
+            if (isMounted) {
+              setUser(mapSupabaseUserToUser(session.user));
+            }
+          }
         } else {
-          setUser(null);
+          if (isMounted) {
+            setUser(null);
+          }
         }
-        setIsLoading(false);
+        
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     );
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -152,7 +184,7 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
     }
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: email.toLowerCase(),
         password,
       });

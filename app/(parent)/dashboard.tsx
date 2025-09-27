@@ -1,11 +1,11 @@
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image } from "react-native";
-import { useAuth } from "@/hooks/auth-context";
+import { useSupabaseAuth } from "@/hooks/supabase-auth-context";
 import { useApp } from "@/hooks/app-context";
 import { Users, Calendar, Bell, Camera, LogOut } from "lucide-react-native";
 import { router } from "expo-router";
 
 export default function ParentDashboard() {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useSupabaseAuth();
   const { kids, trainingPolls, announcements, media, unreadCounts } = useApp();
 
   const myKids = kids.filter(k => k.parentId === user?.id);

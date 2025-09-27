@@ -2,7 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Kid, Payment, FeeStructure, TrainingPoll, Announcement, Message, Media } from '@/types';
-import { useAuth } from './auth-context';
+import { useSupabaseAuth } from './supabase-auth-context';
 
 interface AppState {
   kids: Kid[];
@@ -48,7 +48,7 @@ interface AppState {
 }
 
 export const [AppProvider, useApp] = createContextHook<AppState>(() => {
-  const { user } = useAuth();
+  const { user } = useSupabaseAuth();
   const [kids, setKids] = useState<Kid[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [feeStructure, setFeeStructure] = useState<FeeStructure>({

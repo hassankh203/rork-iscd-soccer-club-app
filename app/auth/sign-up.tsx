@@ -14,10 +14,10 @@ import {
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Mail, Lock, User, Phone } from "lucide-react-native";
-import { useAuth } from "@/hooks/auth-context";
+import { useSupabaseAuth } from "@/hooks/supabase-auth-context";
 
 export default function SignUpScreen() {
-  const { signUp } = useAuth();
+  const { signUp } = useSupabaseAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
