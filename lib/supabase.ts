@@ -68,6 +68,8 @@ try {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
+      // Disable email confirmation for development
+      flowType: 'implicit',
     },
   });
   console.log('✅ Supabase client created successfully');
