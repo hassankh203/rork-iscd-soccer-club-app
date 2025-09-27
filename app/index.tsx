@@ -38,8 +38,7 @@ export default function HomeScreen() {
   }, [user]);
 
   const openFieldDirections = () => {
-    const address = "49 Salem Church Road, Newark, DE 19713";
-    const url = `https://maps.google.com/?q=${encodeURIComponent(address)}`;
+    const url = "https://maps.app.goo.gl/bS2xbmifNjdfYTBU7?g_st=aw";
     Linking.openURL(url).catch(() => {
       console.log("Unable to open maps");
     });
