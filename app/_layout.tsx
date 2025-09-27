@@ -17,6 +17,7 @@ function RootLayoutNav() {
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="auth/sign-in" options={{ title: "Sign In", presentation: "modal" }} />
       <Stack.Screen name="auth/sign-up" options={{ title: "Sign Up", presentation: "modal" }} />
+      <Stack.Screen name="debug-supabase" options={{ title: "Supabase Debug", presentation: "modal" }} />
       <Stack.Screen name="(parent)" options={{ headerShown: false }} />
       <Stack.Screen name="(admin)" options={{ headerShown: false }} />
     </Stack>

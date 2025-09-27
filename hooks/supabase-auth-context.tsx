@@ -157,13 +157,24 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
 
       if (error) {
         console.error('Supabase sign in error:', error);
-        throw new Error(error.message);
+        const errorMessage = typeof error === 'string' ? error : 
+                           error?.message || 
+                           (typeof error === 'object' ? JSON.stringify(error) : 'Unknown error occurred');
+        throw new Error(errorMessage);
       }
 
       console.log('Sign in successful for:', email);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign in error:', error);
-      throw error;
+      // Ensure we always throw a proper Error object
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        const errorMessage = typeof error === 'string' ? error : 
+                           error?.message || 
+                           (typeof error === 'object' ? JSON.stringify(error) : 'Unknown error occurred');
+        throw new Error(errorMessage);
+      }
     }
   }, []);
 
@@ -207,7 +218,10 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
 
       if (error) {
         console.error('Supabase sign up error:', error);
-        throw new Error(error.message);
+        const errorMessage = typeof error === 'string' ? error : 
+                           error?.message || 
+                           (typeof error === 'object' ? JSON.stringify(error) : 'Unknown error occurred');
+        throw new Error(errorMessage);
       }
 
       // Create profile record if user was created
@@ -224,14 +238,23 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
 
         if (profileError) {
           console.error('Error creating profile:', profileError);
+          console.warn('Profile creation failed but user was created successfully. This may be due to missing database tables.');
           // Don't throw here as the user was created successfully
         }
       }
 
       console.log('Sign up successful for:', email);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Sign up error:', error);
-      throw error;
+      // Ensure we always throw a proper Error object
+      if (error instanceof Error) {
+        throw error;
+      } else {
+        const errorMessage = typeof error === 'string' ? error : 
+                           error?.message || 
+                           (typeof error === 'object' ? JSON.stringify(error) : 'Unknown error occurred');
+        throw new Error(errorMessage);
+      }
     }
   }, []);
 

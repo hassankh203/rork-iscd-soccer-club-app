@@ -7,17 +7,27 @@ const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 // Debug logging
-console.log('🔍 Supabase URL:', supabaseUrl ? 'Set' : 'Not set');
-console.log('🔍 Supabase Anon Key:', supabaseAnonKey ? 'Set' : 'Not set');
+console.log('🔍 Supabase URL:', supabaseUrl ? `Set (${supabaseUrl.substring(0, 30)}...)` : 'Not set');
+console.log('🔍 Supabase Anon Key:', supabaseAnonKey ? `Set (${supabaseAnonKey.length} chars)` : 'Not set');
+console.log('🔍 Environment check:', {
+  hasUrl: !!supabaseUrl,
+  hasKey: !!supabaseAnonKey,
+  urlValid: supabaseUrl?.startsWith('https://'),
+  keyValid: supabaseAnonKey && supabaseAnonKey.length > 100
+});
 
-// Check if Supabase is properly configured
-if (!supabaseUrl || !supabaseAnonKey || 
-    supabaseUrl === 'your_supabase_project_url_here' || 
-    supabaseAnonKey === 'your_supabase_anon_key_here') {
-  console.warn('⚠️ Supabase not configured. Using mock mode.');
-  console.warn('Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your .env file');
-  console.warn('Current URL:', supabaseUrl);
-  console.warn('Current Key:', supabaseAnonKey ? 'Present but invalid' : 'Missing');
+// Simple configuration check
+const hasValidUrl = supabaseUrl && supabaseUrl.startsWith('https://') && supabaseUrl.includes('.supabase.co');
+const hasValidKey = supabaseAnonKey && supabaseAnonKey.length > 100 && supabaseAnonKey.startsWith('eyJ');
+
+if (!hasValidUrl || !hasValidKey) {
+  console.warn('⚠️ Supabase not configured properly. Using mock mode.');
+  console.warn('URL valid:', hasValidUrl, supabaseUrl);
+  console.warn('Key valid:', hasValidKey, supabaseAnonKey ? `${supabaseAnonKey.length} chars` : 'Missing');
+} else {
+  console.log('✅ Supabase configuration is valid');
+  console.log('URL:', supabaseUrl);
+  console.log('Key length:', supabaseAnonKey?.length);
 }
 
 // Create a mock client for development when Supabase is not configured
@@ -57,11 +67,11 @@ const createMockClient = () => {
 };
 
 // Export either real Supabase client or mock client
-const isConfigured = supabaseUrl && supabaseAnonKey && 
-  supabaseUrl !== 'your_supabase_project_url_here' && 
-  supabaseAnonKey !== 'your_supabase_anon_key_here';
+const isConfigured = hasValidUrl && hasValidKey;
 
-console.log('🔧 Supabase configured:', isConfigured);
+console.log('🔧 Final Supabase configured:', isConfigured);
+console.log('🔧 URL check:', hasValidUrl);
+console.log('🔧 Key check:', hasValidKey);
 
 export const supabase = isConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
@@ -76,9 +86,15 @@ export const supabase = isConfigured
 
 // Helper to check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
-  const configured = !!(supabaseUrl && supabaseAnonKey && 
-    supabaseUrl !== 'your_supabase_project_url_here' && 
-    supabaseAnonKey !== 'your_supabase_anon_key_here');
-  console.log('✅ isSupabaseConfigured:', configured);
+  const urlValid = supabaseUrl && supabaseUrl.startsWith('https://') && supabaseUrl.includes('.supabase.co');
+  const keyValid = supabaseAnonKey && supabaseAnonKey.length > 100 && supabaseAnonKey.startsWith('eyJ');
+  const configured = !!(urlValid && keyValid);
+  console.log('✅ isSupabaseConfigured check:', {
+    configured,
+    urlValid,
+    keyValid,
+    url: supabaseUrl?.substring(0, 30) + '...',
+    keyLength: supabaseAnonKey?.length
+  });
   return configured;
 };

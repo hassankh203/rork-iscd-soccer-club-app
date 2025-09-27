@@ -16,6 +16,7 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Mail, Lock, Eye, EyeOff, MapPin } from "lucide-react-native";
 import { useSupabaseAuth } from "@/hooks/supabase-auth-context";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 export default function SignInScreen() {
   const { signIn } = useSupabaseAuth();
@@ -161,24 +162,33 @@ export default function SignInScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.demoSection}>
-              <Text style={styles.demoTitle}>🚀 Demo Mode Active</Text>
-              <Text style={styles.demoSubtitle}>Supabase not configured - using demo accounts</Text>
-              
-              <View style={styles.demoAccount}>
-                <Text style={styles.demoAccountTitle}>👨‍💼 Admin Account</Text>
-                <Text style={styles.demoAccountText}>Email: admin@iscd.org</Text>
-                <Text style={styles.demoAccountText}>Password: 123456</Text>
+            {!isSupabaseConfigured() && (
+              <View style={styles.demoSection}>
+                <Text style={styles.demoTitle}>🚀 Demo Mode Active</Text>
+                <Text style={styles.demoSubtitle}>Supabase not configured - using demo accounts</Text>
+                
+                <View style={styles.demoAccount}>
+                  <Text style={styles.demoAccountTitle}>👨‍💼 Admin Account</Text>
+                  <Text style={styles.demoAccountText}>Email: admin@iscd.org</Text>
+                  <Text style={styles.demoAccountText}>Password: 123456</Text>
+                </View>
+                
+                <View style={styles.demoAccount}>
+                  <Text style={styles.demoAccountTitle}>👨‍👩‍👧‍👦 Parent Account</Text>
+                  <Text style={styles.demoAccountText}>Email: parent@example.com</Text>
+                  <Text style={styles.demoAccountText}>Password: 654321</Text>
+                </View>
+                
+                <Text style={styles.demoNote}>💡 To use real accounts, configure Supabase in your .env file</Text>
               </View>
-              
-              <View style={styles.demoAccount}>
-                <Text style={styles.demoAccountTitle}>👨‍👩‍👧‍👦 Parent Account</Text>
-                <Text style={styles.demoAccountText}>Email: parent@example.com</Text>
-                <Text style={styles.demoAccountText}>Password: 654321</Text>
+            )}
+            
+            {isSupabaseConfigured() && (
+              <View style={styles.supabaseSection}>
+                <Text style={styles.supabaseTitle}>✅ Supabase Connected</Text>
+                <Text style={styles.supabaseSubtitle}>You can now create and sign in with real accounts</Text>
               </View>
-              
-              <Text style={styles.demoNote}>💡 To use real accounts, configure Supabase in your .env file</Text>
-            </View>
+            )}
 
             <TouchableOpacity
               style={styles.directionsButton}
@@ -364,5 +374,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontStyle: 'italic',
     marginTop: 8,
+  },
+  supabaseSection: {
+    marginTop: 30,
+    padding: 20,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#22C55E',
+  },
+  supabaseTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#15803D',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  supabaseSubtitle: {
+    fontSize: 14,
+    color: '#166534',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

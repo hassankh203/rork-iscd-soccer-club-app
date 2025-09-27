@@ -30,6 +30,15 @@ export default function SignUpScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignUp = async () => {
+    // Check Supabase configuration first
+    if (!isSupabaseConfigured()) {
+      Alert.alert(
+        "Configuration Error", 
+        "Supabase is not properly configured. Please check your environment variables and restart the app."
+      );
+      return;
+    }
+
     if (!email || !password || !confirmPassword || !name || !phone) {
       Alert.alert("Error", "Please fill in all fields");
       return;
@@ -53,12 +62,27 @@ export default function SignUpScreen() {
     setIsLoading(true);
     try {
       console.log('🚀 Attempting sign up with:', { email, name, phone });
+      console.log('🔍 Supabase configured:', isSupabaseConfigured());
+      
       await signUp(email, password, name, phone);
-      Alert.alert("Success", "Account created successfully!");
+      Alert.alert("Success", "Account created successfully! Please check your email to verify your account.");
       router.replace('/');
     } catch (error: any) {
       console.error('❌ Sign up error:', error);
-      Alert.alert("Error", error.message || "Failed to create account");
+      console.error('❌ Error details:', {
+        message: error?.message,
+        name: error?.name,
+        stack: error?.stack?.substring(0, 200)
+      });
+      
+      let errorMessage = "Failed to create account";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      Alert.alert("Sign Up Error", errorMessage);
     } finally {
       setIsLoading(false);
     }
