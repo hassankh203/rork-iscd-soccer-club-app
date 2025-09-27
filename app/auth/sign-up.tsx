@@ -65,8 +65,16 @@ export default function SignUpScreen() {
       console.log('🔍 Supabase configured:', isSupabaseConfigured());
       
       await signUp(email, password, name, phone);
-      Alert.alert("Success", "Account created successfully! Please check your email to verify your account.");
-      router.replace('/');
+      Alert.alert(
+        "Account Created!", 
+        "Please check your email and click the confirmation link to activate your account. You won't be able to sign in until you confirm your email.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace('/auth/sign-in')
+          }
+        ]
+      );
     } catch (error: any) {
       console.error('❌ Sign up error:', error);
       console.error('❌ Error details:', {

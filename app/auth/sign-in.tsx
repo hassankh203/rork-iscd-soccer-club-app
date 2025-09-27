@@ -19,12 +19,14 @@ import { useSupabaseAuth } from "@/hooks/supabase-auth-context";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
 export default function SignInScreen() {
-  const { signIn } = useSupabaseAuth();
+  const { signIn, resendConfirmation } = useSupabaseAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showResendButton, setShowResendButton] = useState(false);
 
   const handleSignIn = async () => {
     if (!email.trim() || !password) {
@@ -45,6 +47,11 @@ export default function SignInScreen() {
       console.error('Sign in error:', errorMessage);
       setError(errorMessage);
       
+      // Show resend confirmation button if email not confirmed
+      if (errorMessage.includes('Email not confirmed') || errorMessage.includes('confirmation link')) {
+        setShowResendButton(true);
+      }
+      
       // Show alert for better user experience
       Alert.alert(
         'Sign In Failed',
@@ -53,6 +60,29 @@ export default function SignInScreen() {
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email address first.');
+      return;
+    }
+
+    setIsResendingConfirmation(true);
+    try {
+      await resendConfirmation(email.trim());
+      Alert.alert(
+        'Confirmation Email Sent',
+        'Please check your email for the new confirmation link.',
+        [{ text: 'OK', style: 'default' }]
+      );
+      setShowResendButton(false);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to resend confirmation email.';
+      Alert.alert('Error', errorMessage);
+    } finally {
+      setIsResendingConfirmation(false);
     }
   };
 
@@ -140,6 +170,19 @@ export default function SignInScreen() {
             {error && (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{error}</Text>
+                {showResendButton && (
+                  <TouchableOpacity
+                    style={[styles.resendButton, isResendingConfirmation && styles.disabledButton]}
+                    onPress={handleResendConfirmation}
+                    disabled={isResendingConfirmation}
+                  >
+                    {isResendingConfirmation ? (
+                      <ActivityIndicator color="#1B5E20" size="small" />
+                    ) : (
+                      <Text style={styles.resendButtonText}>Resend Confirmation Email</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
               </View>
             )}
 
@@ -395,5 +438,19 @@ const styles = StyleSheet.create({
     color: '#166534',
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  resendButton: {
+    backgroundColor: '#E8F5E8',
+    borderColor: '#1B5E20',
+    borderWidth: 1,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  resendButtonText: {
+    color: '#1B5E20',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

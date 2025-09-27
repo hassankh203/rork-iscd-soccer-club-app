@@ -15,6 +15,7 @@ interface AuthState {
   updateProfile: (updates: Partial<User>) => Promise<void>;
   changePassword: (newPassword: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  resendConfirmation: (email: string) => Promise<void>;
 }
 
 // Input validation
@@ -181,7 +182,7 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
         if (errorMessage.includes('Invalid login credentials')) {
           errorMessage = 'Invalid email or password. Please check your credentials and try again.';
         } else if (errorMessage.includes('Email not confirmed')) {
-          errorMessage = 'Please check your email and click the confirmation link before signing in.';
+          errorMessage = 'Please check your email and click the confirmation link before signing in. If you need a new confirmation email, use the "Resend Confirmation" option.';
         } else if (errorMessage.includes('Too many requests')) {
           errorMessage = 'Too many sign-in attempts. Please wait a moment and try again.';
         } else if (errorMessage.includes('Supabase not configured')) {
@@ -422,6 +423,31 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
       throw error;
     }
   }, []);
+  
+  const resendConfirmation = useCallback(async (email: string) => {
+    console.log('Resending confirmation email for:', email);
+    
+    if (!validateEmail(email)) {
+      throw new Error('Please enter a valid email address');
+    }
+    
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email.toLowerCase(),
+      });
+
+      if (error) {
+        console.error('Resend confirmation error:', error);
+        throw new Error(error.message);
+      }
+      
+      console.log('Confirmation email resent to:', email);
+    } catch (error) {
+      console.error('Resend confirmation error:', error);
+      throw error;
+    }
+  }, []);
 
   return useMemo(() => ({
     user,
@@ -433,6 +459,7 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
     signOut,
     updateProfile,
     changePassword,
-    resetPassword
-  }), [user, session, isLoading, signIn, signUp, signOut, updateProfile, changePassword, resetPassword]);
+    resetPassword,
+    resendConfirmation
+  }), [user, session, isLoading, signIn, signUp, signOut, updateProfile, changePassword, resetPassword, resendConfirmation]);
 });
