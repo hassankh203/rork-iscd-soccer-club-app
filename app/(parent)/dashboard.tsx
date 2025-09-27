@@ -1,7 +1,7 @@
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, Linking } from "react-native";
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image } from "react-native";
 import { useAuth } from "@/hooks/auth-context";
 import { useApp } from "@/hooks/app-context";
-import { Users, Calendar, Bell, Camera, LogOut, MapPin } from "lucide-react-native";
+import { Users, Calendar, Bell, Camera, LogOut } from "lucide-react-native";
 import { router } from "expo-router";
 
 export default function ParentDashboard() {
@@ -16,11 +16,6 @@ export default function ParentDashboard() {
   const handleSignOut = async () => {
     await signOut();
     router.replace('/');
-  };
-
-  const handleFieldDirection = () => {
-    const mapUrl = 'https://maps.app.goo.gl/bS2xbmifNjdfYTBU7?g_st=aw';
-    Linking.openURL(mapUrl).catch(err => console.error('Error opening map:', err));
   };
 
   return (
@@ -105,16 +100,6 @@ export default function ParentDashboard() {
           onPress={() => router.push('/payments')}
         >
           <Text style={styles.actionButtonText}>Submit Payment</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.fieldDirectionContainer}>
-        <TouchableOpacity
-          style={styles.fieldDirectionButton}
-          onPress={handleFieldDirection}
-        >
-          <MapPin color="#fff" size={20} />
-          <Text style={styles.fieldDirectionText}>Get Field Direction</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -250,24 +235,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  fieldDirectionContainer: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  fieldDirectionButton: {
-    backgroundColor: '#2196F3',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  fieldDirectionText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
