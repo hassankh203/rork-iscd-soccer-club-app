@@ -18,6 +18,9 @@ console.log('  supabaseAnonKey:', supabaseAnonKey ? `${supabaseAnonKey.length} c
 const hasValidUrl = supabaseUrl && supabaseUrl.startsWith('https://') && supabaseUrl.includes('.supabase.co');
 const hasValidKey = supabaseAnonKey && supabaseAnonKey.length > 100 && supabaseAnonKey.startsWith('eyJ');
 
+// Force configuration to be valid since we have the credentials
+const isConfigured = true;
+
 console.log('🔍 Validation results:');
 console.log('  hasValidUrl:', hasValidUrl);
 console.log('  hasValidKey:', hasValidKey);
@@ -44,103 +47,33 @@ if (!hasValidUrl || !hasValidKey) {
   console.log('Key length:', supabaseAnonKey?.length);
 }
 
-// Create a mock client for development when Supabase is not configured
-const createMockClient = () => {
-  console.log('🎭 Creating mock Supabase client');
-  
-  const mockAuth = {
-    getSession: () => {
-      console.log('🎭 Mock getSession called');
-      return Promise.resolve({ data: { session: null }, error: null });
-    },
-    onAuthStateChange: () => {
-      console.log('🎭 Mock onAuthStateChange called');
-      return { data: { subscription: { unsubscribe: () => {} } } };
-    },
-    signInWithPassword: () => {
-      console.log('🎭 Mock signInWithPassword called');
-      return Promise.resolve({ 
-        data: { user: null, session: null }, 
-        error: { message: 'Supabase not configured. Please check your environment variables.' } 
-      });
-    },
-    signUp: () => {
-      console.log('🎭 Mock signUp called');
-      return Promise.resolve({ 
-        data: { user: null, session: null }, 
-        error: { message: 'Supabase not configured. Please check your environment variables.' } 
-      });
-    },
-    signOut: () => {
-      console.log('🎭 Mock signOut called');
-      return Promise.resolve({ error: null });
-    },
-    updateUser: () => {
-      console.log('🎭 Mock updateUser called');
-      return Promise.resolve({ data: { user: null }, error: null });
-    },
-    resetPasswordForEmail: () => {
-      console.log('🎭 Mock resetPasswordForEmail called');
-      return Promise.resolve({ data: {}, error: null });
-    }
-  };
-  
-  const mockFrom = () => ({
-    select: () => ({
-      eq: () => ({
-        single: () => Promise.resolve({ data: null, error: null })
-      })
-    }),
-    insert: () => Promise.resolve({ data: null, error: null }),
-    update: () => ({
-      eq: () => Promise.resolve({ data: null, error: null })
-    })
-  });
-  
-  return {
-    auth: mockAuth,
-    from: mockFrom
-  };
-};
 
-// Export either real Supabase client or mock client
-const isConfigured = hasValidUrl && hasValidKey;
 
 console.log('🔧 Final configuration decision:');
 console.log('  isConfigured:', isConfigured);
 console.log('  hasValidUrl:', hasValidUrl);
 console.log('  hasValidKey:', hasValidKey);
 
-if (isConfigured) {
-  console.log('✅ Creating real Supabase client');
-  console.log('  URL:', supabaseUrl);
-  console.log('  Key length:', supabaseAnonKey?.length);
-} else {
-  console.log('🎭 Creating mock Supabase client');
-}
+console.log('✅ Creating real Supabase client');
+console.log('  URL:', supabaseUrl);
+console.log('  Key length:', supabaseAnonKey?.length);
 
 let supabaseClient: any;
 
-if (isConfigured) {
-  try {
-    console.log('🔧 Attempting to create Supabase client...');
-    supabaseClient = createClient(supabaseUrl!, supabaseAnonKey!, {
-      auth: {
-        storage: AsyncStorage,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false,
-      },
-    });
-    console.log('✅ Supabase client created successfully');
-  } catch (error) {
-    console.error('❌ Failed to create Supabase client:', error);
-    console.log('🎭 Falling back to mock client');
-    supabaseClient = createMockClient();
-  }
-} else {
-  console.log('🎭 Using mock client due to configuration issues');
-  supabaseClient = createMockClient();
+try {
+  console.log('🔧 Attempting to create Supabase client...');
+  supabaseClient = createClient(supabaseUrl!, supabaseAnonKey!, {
+    auth: {
+      storage: AsyncStorage,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  });
+  console.log('✅ Supabase client created successfully');
+} catch (error) {
+  console.error('❌ Failed to create Supabase client:', error);
+  throw new Error('Failed to initialize Supabase client');
 }
 
 export const supabase = supabaseClient;

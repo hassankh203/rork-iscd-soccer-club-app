@@ -280,24 +280,8 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
         throw new Error(errorMessage);
       }
 
-      // Create profile record if user was created
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            email: email.toLowerCase(),
-            name: name.trim(),
-            phone: phone.replace(/[\s\-\(\)]/g, ''),
-            role: 'parent',
-          });
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          console.warn('Profile creation failed but user was created successfully. This may be due to missing database tables.');
-          // Don't throw here as the user was created successfully
-        }
-      }
+      // Profile will be created automatically by the database trigger
+      // No need to manually create it here
 
       console.log('Sign up successful for:', email);
     } catch (error: any) {
