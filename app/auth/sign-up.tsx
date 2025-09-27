@@ -15,9 +15,13 @@ import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Mail, Lock, User, Phone } from "lucide-react-native";
 import { useSupabaseAuth } from "@/hooks/supabase-auth-context";
+import { isSupabaseConfigured } from "@/lib/supabase";
 
 export default function SignUpScreen() {
   const { signUp } = useSupabaseAuth();
+  
+  // Debug Supabase configuration
+  console.log('🔍 Supabase configured in sign-up:', isSupabaseConfigured());
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -48,9 +52,12 @@ export default function SignUpScreen() {
 
     setIsLoading(true);
     try {
+      console.log('🚀 Attempting sign up with:', { email, name, phone });
       await signUp(email, password, name, phone);
+      Alert.alert("Success", "Account created successfully!");
       router.replace('/');
     } catch (error: any) {
+      console.error('❌ Sign up error:', error);
       Alert.alert("Error", error.message || "Failed to create account");
     } finally {
       setIsLoading(false);

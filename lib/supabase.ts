@@ -6,12 +6,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
+// Debug logging
+console.log('🔍 Supabase URL:', supabaseUrl ? 'Set' : 'Not set');
+console.log('🔍 Supabase Anon Key:', supabaseAnonKey ? 'Set' : 'Not set');
+
 // Check if Supabase is properly configured
 if (!supabaseUrl || !supabaseAnonKey || 
     supabaseUrl === 'your_supabase_project_url_here' || 
     supabaseAnonKey === 'your_supabase_anon_key_here') {
   console.warn('⚠️ Supabase not configured. Using mock mode.');
   console.warn('Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY in your .env file');
+  console.warn('Current URL:', supabaseUrl);
+  console.warn('Current Key:', supabaseAnonKey ? 'Present but invalid' : 'Missing');
 }
 
 // Create a mock client for development when Supabase is not configured
@@ -51,9 +57,13 @@ const createMockClient = () => {
 };
 
 // Export either real Supabase client or mock client
-export const supabase = (supabaseUrl && supabaseAnonKey && 
+const isConfigured = supabaseUrl && supabaseAnonKey && 
   supabaseUrl !== 'your_supabase_project_url_here' && 
-  supabaseAnonKey !== 'your_supabase_anon_key_here') 
+  supabaseAnonKey !== 'your_supabase_anon_key_here';
+
+console.log('🔧 Supabase configured:', isConfigured);
+
+export const supabase = isConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         storage: AsyncStorage,
@@ -66,7 +76,9 @@ export const supabase = (supabaseUrl && supabaseAnonKey &&
 
 // Helper to check if Supabase is properly configured
 export const isSupabaseConfigured = () => {
-  return !!(supabaseUrl && supabaseAnonKey && 
+  const configured = !!(supabaseUrl && supabaseAnonKey && 
     supabaseUrl !== 'your_supabase_project_url_here' && 
     supabaseAnonKey !== 'your_supabase_anon_key_here');
+  console.log('✅ isSupabaseConfigured:', configured);
+  return configured;
 };
