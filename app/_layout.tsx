@@ -3,7 +3,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { AuthProvider } from "@/hooks/auth-context";
+import { SupabaseAuthProvider } from "@/hooks/supabase-auth-context";
 import { AppProvider } from "@/hooks/app-context";
 import { HadithProvider } from "@/hooks/hadith-context";
 
@@ -33,13 +33,13 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={containerStyle}>
-        <AuthProvider>
+        <SupabaseAuthProvider>
           <AppProvider>
             <HadithProvider>
               <RootLayoutNav />
             </HadithProvider>
           </AppProvider>
-        </AuthProvider>
+        </SupabaseAuthProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>
   );

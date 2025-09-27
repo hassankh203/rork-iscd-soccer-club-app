@@ -16,12 +16,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { MapPin, LogIn, UserPlus, Shield, BookOpen } from "lucide-react-native";
 
-import { useAuth } from "@/hooks/auth-context";
+import { useSupabaseAuth } from "@/hooks/supabase-auth-context";
 import { useHadith } from "@/hooks/hadith-context";
 import { hadiths } from "@/constants/hadiths";
 
 export default function HomeScreen() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading } = useSupabaseAuth();
   const { getHadithOfTheDay } = useHadith();
   const [hadithModalVisible, setHadithModalVisible] = useState(false);
   const [currentHadith, setCurrentHadith] = useState<typeof hadiths[0] | null>(null);
