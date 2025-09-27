@@ -9,11 +9,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator
+  ActivityIndicator,
+  Linking
 } from "react-native";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react-native";
+import { Mail, Lock, Eye, EyeOff, MapPin } from "lucide-react-native";
 import { useAuth } from "@/hooks/auth-context";
 
 export default function SignInScreen() {
@@ -51,6 +52,30 @@ export default function SignInScreen() {
       );
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGetDirections = async () => {
+    const locationUrl = 'https://maps.app.goo.gl/bS2xbmifNjdfYTBU7?g_st=aw';
+    
+    try {
+      const supported = await Linking.canOpenURL(locationUrl);
+      if (supported) {
+        await Linking.openURL(locationUrl);
+      } else {
+        Alert.alert(
+          'Unable to Open Maps',
+          'Please install Google Maps or use a web browser to view the location.',
+          [{ text: 'OK', style: 'default' }]
+        );
+      }
+    } catch (error) {
+      console.error('Error opening directions:', error);
+      Alert.alert(
+        'Error',
+        'Unable to open directions. Please try again.',
+        [{ text: 'OK', style: 'default' }]
+      );
     }
   };
 
@@ -146,6 +171,14 @@ export default function SignInScreen() {
               <Text style={styles.hintText}>Password: 654321</Text>
               <Text style={styles.hintText}>Note: Password must be exactly 6 digits</Text>
             </View>
+
+            <TouchableOpacity
+              style={styles.directionsButton}
+              onPress={handleGetDirections}
+            >
+              <MapPin color="#1B5E20" size={20} />
+              <Text style={styles.directionsButtonText}>Get Directions to School</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -258,5 +291,22 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#E3F2FD',
     borderRadius: 8,
+  },
+  directionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8F5E8',
+    borderColor: '#1B5E20',
+    borderWidth: 1,
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    gap: 8,
+  },
+  directionsButtonText: {
+    color: '#1B5E20',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
