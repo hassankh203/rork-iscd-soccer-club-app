@@ -143,8 +143,19 @@ export const [LocalDataProvider, useLocalData] = createContextHook(() => {
 
   // User management operations (admin only)
   const getUsers = useCallback(async (): Promise<DbUser[]> => {
-    if (!user || user.role !== 'admin') throw new Error('Admin access required');
-    return await getAllUsers();
+    console.log('🔍 Checking admin access for getUsers...');
+    console.log('👤 Current user:', user);
+    console.log('🔑 User role:', user?.role);
+    
+    if (!user || user.role !== 'admin') {
+      console.log('❌ Admin access denied. User:', user?.email, 'Role:', user?.role);
+      throw new Error('Admin access required');
+    }
+    
+    console.log('✅ Admin access granted. Fetching all users...');
+    const allUsers = await getAllUsers();
+    console.log('📊 Retrieved users:', allUsers.length, 'users');
+    return allUsers;
   }, [user]);
 
   const updateUserStatusById = useCallback(async (userId: string, status: 'active' | 'inactive'): Promise<void> => {

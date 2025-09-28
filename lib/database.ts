@@ -108,7 +108,7 @@ const createTables = async () => {
   await createDefaultAdmin();
 };
 
-// Create default admin user
+// Create default admin user and sample data
 const createDefaultAdmin = async () => {
   try {
     const adminExists = await getUserByEmail('admin@example.com');
@@ -122,8 +122,42 @@ const createDefaultAdmin = async () => {
       });
       console.log('✅ Default admin user created');
     }
+    
+    // Create sample parent users for testing
+    const sampleUsers = [
+      {
+        email: 'parent1@example.com',
+        password: '123456',
+        name: 'John Smith',
+        phone: '+1234567891',
+        role: 'parent' as const
+      },
+      {
+        email: 'parent2@example.com',
+        password: '123456',
+        name: 'Sarah Johnson',
+        phone: '+1234567892',
+        role: 'parent' as const
+      },
+      {
+        email: 'parent3@example.com',
+        password: '123456',
+        name: 'Mike Davis',
+        phone: '+1234567893',
+        role: 'parent' as const,
+        status: 'inactive' as const
+      }
+    ];
+    
+    for (const userData of sampleUsers) {
+      const userExists = await getUserByEmail(userData.email);
+      if (!userExists) {
+        await createUser(userData);
+        console.log(`✅ Sample user created: ${userData.email}`);
+      }
+    }
   } catch (error) {
-    console.log('ℹ️ Admin user already exists or error creating:', error);
+    console.log('ℹ️ Error creating default users:', error);
   }
 };
 

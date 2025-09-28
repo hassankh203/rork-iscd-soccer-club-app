@@ -33,15 +33,19 @@ export default function UsersScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Loading users data...');
       const [usersData, kidsData] = await Promise.all([
         getUsers(),
         getKids()
       ]);
+      console.log('📊 Users loaded:', usersData.length, 'users');
+      console.log('👶 Kids loaded:', kidsData.length, 'kids');
+      console.log('👥 Users data:', usersData);
       setUsers(usersData);
       setAllKids(kidsData);
     } catch (error) {
-      console.error('Failed to load data:', error);
-      Alert.alert('Error', 'Failed to load users data');
+      console.error('❌ Failed to load data:', error);
+      Alert.alert('Error', `Failed to load users data: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -120,6 +124,10 @@ export default function UsersScreen() {
         <Text style={styles.sectionTitle}>All Users ({users.length})</Text>
         {loading ? (
           <Text style={styles.loadingText}>Loading users...</Text>
+        ) : filteredUsers.length === 0 ? (
+          <Text style={styles.emptyText}>
+            {users.length === 0 ? 'No users found in the database.' : 'No users match your search.'}
+          </Text>
         ) : (
           filteredUsers.map(user => {
             const userKids = getUserKids(user.id);
