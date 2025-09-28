@@ -39,6 +39,7 @@ const createTables = async () => {
       name TEXT NOT NULL,
       phone TEXT,
       role TEXT DEFAULT 'parent',
+      status TEXT DEFAULT 'active',
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP
     )`,
@@ -154,6 +155,7 @@ export interface User {
   name: string;
   phone?: string;
   role: 'parent' | 'admin';
+  status: 'active' | 'inactive';
   createdAt: string;
 }
 
@@ -163,6 +165,7 @@ export interface CreateUserData {
   name: string;
   phone?: string;
   role?: 'parent' | 'admin';
+  status?: 'active' | 'inactive';
 }
 
 export const createUser = async (userData: CreateUserData): Promise<User> => {
@@ -185,6 +188,7 @@ export const createUser = async (userData: CreateUserData): Promise<User> => {
       name: userData.name,
       phone: userData.phone,
       role: userData.role || 'parent',
+      status: userData.status || 'active',
       createdAt: now
     };
     
@@ -196,8 +200,8 @@ export const createUser = async (userData: CreateUserData): Promise<User> => {
   }
   
   await db.runAsync(
-    'INSERT INTO users (id, email, password, name, phone, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [id, userData.email, hashedPassword, userData.name, userData.phone || null, userData.role || 'parent', now, now]
+    'INSERT INTO users (id, email, password, name, phone, role, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [id, userData.email, hashedPassword, userData.name, userData.phone || null, userData.role || 'parent', userData.status || 'active', now, now]
   );
   
   return {
@@ -206,6 +210,7 @@ export const createUser = async (userData: CreateUserData): Promise<User> => {
     name: userData.name,
     phone: userData.phone,
     role: userData.role || 'parent',
+    status: userData.status || 'active',
     createdAt: now
   };
 };
@@ -230,6 +235,7 @@ export const getUserByEmail = async (email: string): Promise<(User & { password:
     name: result.name,
     phone: result.phone,
     role: result.role,
+    status: result.status || 'active',
     createdAt: result.created_at
   };
 };
@@ -244,7 +250,7 @@ export const getUserById = async (id: string): Promise<User | null> => {
   }
   
   const result = await db.getFirstAsync(
-    'SELECT id, email, name, phone, role, created_at FROM users WHERE id = ?',
+    'SELECT id, email, name, phone, role, status, created_at FROM users WHERE id = ?',
     [id]
   ) as any;
   
@@ -256,6 +262,7 @@ export const getUserById = async (id: string): Promise<User | null> => {
     name: result.name,
     phone: result.phone,
     role: result.role,
+    status: result.status || 'active',
     createdAt: result.created_at
   };
 };
@@ -660,4 +667,78 @@ const getStoredMedia = async (): Promise<MediaUpload[]> => {
   } catch {
     return [];
   }
+};
+
+// User management operations for admin
+export const getAllUsers = async (): Promise<User[]> => {
+  if (Platform.OS === 'web') {
+    const users = await getStoredUsers();
+    return users.map(user => {
+      const { password, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    });
+  }
+  
+  const results = await db.getAllAsync(
+    'SELECT id, email, name, phone, role, status, created_at FROM users ORDER BY created_at DESC'
+  ) as any[];
+  
+  return results.map(result => ({
+    id: result.id,
+    email: result.email,
+    name: result.name,
+    phone: result.phone,
+    role: result.role,
+    status: result.status || 'active',
+    createdAt: result.created_at
+  }));
+};
+
+export const updateUserStatus = async (userId: string, status: 'active' | 'inactive'): Promise<void> => {
+  if (Platform.OS === 'web') {
+    const users = await getStoredUsers();
+    const userIndex = users.findIndex(u => u.id === userId);
+    if (userIndex === -1) throw new Error('User not found');
+    
+    users[userIndex] = { ...users[userIndex], status };
+    await AsyncStorage.setItem('users', JSON.stringify(users));
+    return;
+  }
+  
+  await db.runAsync(
+    'UPDATE users SET status = ?, updated_at = ? WHERE id = ?',
+    [status, new Date().toISOString(), userId]
+  );
+};
+
+export const deleteUser = async (userId: string): Promise<void> => {
+  if (Platform.OS === 'web') {
+    // Delete user and related data from AsyncStorage
+    const users = await getStoredUsers();
+    const filteredUsers = users.filter(u => u.id !== userId);
+    await AsyncStorage.setItem('users', JSON.stringify(filteredUsers));
+    
+    // Delete related kids
+    const kids = await getStoredKids();
+    const filteredKids = kids.filter(k => k.parentId !== userId);
+    await AsyncStorage.setItem('kids', JSON.stringify(filteredKids));
+    
+    // Delete related payments
+    const payments = await getStoredPayments();
+    const filteredPayments = payments.filter(p => p.parentId !== userId);
+    await AsyncStorage.setItem('payments', JSON.stringify(filteredPayments));
+    
+    // Delete related communications
+    const communications = await getStoredCommunications();
+    const filteredCommunications = communications.filter(c => c.senderId !== userId && c.recipientId !== userId);
+    await AsyncStorage.setItem('communications', JSON.stringify(filteredCommunications));
+    
+    return;
+  }
+  
+  // Delete user and cascade delete related data
+  await db.runAsync('DELETE FROM communications WHERE sender_id = ? OR recipient_id = ?', [userId, userId]);
+  await db.runAsync('DELETE FROM payments WHERE parent_id = ?', [userId]);
+  await db.runAsync('DELETE FROM kids WHERE parent_id = ?', [userId]);
+  await db.runAsync('DELETE FROM users WHERE id = ?', [userId]);
 };

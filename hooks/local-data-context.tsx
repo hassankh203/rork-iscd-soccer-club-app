@@ -13,10 +13,14 @@ import {
   updatePaymentStatus,
   createMediaUpload,
   getMediaUploads,
+  getAllUsers,
+  updateUserStatus,
+  deleteUser,
   Kid as DbKid,
   Communication as DbCommunication,
   Payment as DbPayment,
   MediaUpload as DbMediaUpload,
+  User as DbUser,
 } from '@/lib/database';
 
 // Local data hooks
@@ -137,6 +141,22 @@ export const [LocalDataProvider, useLocalData] = createContextHook(() => {
     return await getMediaUploads(category);
   }, []);
 
+  // User management operations (admin only)
+  const getUsers = useCallback(async (): Promise<DbUser[]> => {
+    if (!user || user.role !== 'admin') throw new Error('Admin access required');
+    return await getAllUsers();
+  }, [user]);
+
+  const updateUserStatusById = useCallback(async (userId: string, status: 'active' | 'inactive'): Promise<void> => {
+    if (!user || user.role !== 'admin') throw new Error('Admin access required');
+    await updateUserStatus(userId, status);
+  }, [user]);
+
+  const deleteUserById = useCallback(async (userId: string): Promise<void> => {
+    if (!user || user.role !== 'admin') throw new Error('Admin access required');
+    await deleteUser(userId);
+  }, [user]);
+
   return useMemo(() => ({
     // Kids
     addKid,
@@ -154,6 +174,11 @@ export const [LocalDataProvider, useLocalData] = createContextHook(() => {
     // Media
     uploadMedia,
     getMedia,
+    
+    // User management (admin only)
+    getUsers,
+    updateUserStatusById,
+    deleteUserById,
   }), [
     addKid,
     getKids,
@@ -164,5 +189,8 @@ export const [LocalDataProvider, useLocalData] = createContextHook(() => {
     updatePayment,
     uploadMedia,
     getMedia,
+    getUsers,
+    updateUserStatusById,
+    deleteUserById,
   ]);
 });

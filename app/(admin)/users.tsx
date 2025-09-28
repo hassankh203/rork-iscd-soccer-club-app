@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,35 +7,47 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
-  Pressable
+  Pressable,
+  Alert
 } from "react-native";
-import { useApp } from "@/hooks/app-context";
-import { Search, Users, User, Calendar } from "lucide-react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { User as UserType } from "@/types";
+import { useLocalData } from "@/hooks/local-data-context";
+import { Search, User, MoreVertical, UserCheck, UserX, Trash2 } from "lucide-react-native";
+import { User as DbUser, Kid as DbKid } from "@/lib/database";
 import React from "react";
 
 export default function UsersScreen() {
-  const { kids, getTeamRoster } = useApp();
+  const { getUsers, getKids, updateUserStatusById, deleteUserById } = useLocalData();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
-  const [users, setUsers] = useState<UserType[]>([]);
+  const [selectedUser, setSelectedUser] = useState<DbUser | null>(null);
+  const [users, setUsers] = useState<DbUser[]>([]);
+  const [allKids, setAllKids] = useState<DbKid[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [actionModalVisible, setActionModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // Load users from storage
-  React.useEffect(() => {
-    loadUsers();
+  // Load users and kids data
+  useEffect(() => {
+    loadData();
   }, []);
 
-  const loadUsers = async () => {
-    const usersData = await AsyncStorage.getItem('users');
-    if (usersData) {
-      setUsers(JSON.parse(usersData));
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [usersData, kidsData] = await Promise.all([
+        getUsers(),
+        getKids()
+      ]);
+      setUsers(usersData);
+      setAllKids(kidsData);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      Alert.alert('Error', 'Failed to load users data');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const teamARoster = getTeamRoster('A');
-  const teamBRoster = getTeamRoster('B');
+
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -43,10 +55,54 @@ export default function UsersScreen() {
   );
 
   const getUserKids = (userId: string) => {
-    return kids.filter(k => k.parentId === userId);
+    return allKids.filter(k => k.parentId === userId);
   };
 
-  const currentYear = new Date().getFullYear();
+  const handleUpdateUserStatus = async (userId: string, newStatus: 'active' | 'inactive') => {
+    try {
+      setLoading(true);
+      await updateUserStatusById(userId, newStatus);
+      await loadData();
+      setActionModalVisible(false);
+      Alert.alert('Success', `User status updated to ${newStatus}`);
+    } catch (error) {
+      console.error('Failed to update user status:', error);
+      Alert.alert('Error', 'Failed to update user status');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    Alert.alert(
+      'Delete User',
+      'Are you sure you want to delete this user? This will also delete all their kids, payments, and communications. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await deleteUserById(userId);
+              await loadData();
+              setActionModalVisible(false);
+              setModalVisible(false);
+              Alert.alert('Success', 'User deleted successfully');
+            } catch (error) {
+              console.error('Failed to delete user:', error);
+              Alert.alert('Error', 'Failed to delete user');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+
 
   return (
     <ScrollView style={styles.container}>
@@ -61,79 +117,86 @@ export default function UsersScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Parents ({users.length})</Text>
-        {filteredUsers.map(user => {
-          const userKids = getUserKids(user.id);
-          return (
-            <TouchableOpacity
-              key={user.id}
-              style={styles.userCard}
-              onPress={() => {
-                setSelectedUser(user);
-                setModalVisible(true);
-              }}
-            >
-              <View style={styles.userHeader}>
-                <View style={styles.userAvatar}>
-                  <User color="#1B5E20" size={20} />
-                </View>
-                <View style={styles.userInfo}>
-                  <Text style={styles.userName}>{user.name}</Text>
-                  <Text style={styles.userEmail}>{user.email}</Text>
-                  <Text style={styles.userPhone}>{user.phone}</Text>
-                </View>
-              </View>
-              <View style={styles.userStats}>
-                <Text style={styles.kidCount}>{userKids.length} kids registered</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Team A Roster (10+ years)</Text>
-        {teamARoster.length > 0 ? (
-          teamARoster.map(kid => {
-            const parent = users.find(u => u.id === kid.parentId);
+        <Text style={styles.sectionTitle}>All Users ({users.length})</Text>
+        {loading ? (
+          <Text style={styles.loadingText}>Loading users...</Text>
+        ) : (
+          filteredUsers.map(user => {
+            const userKids = getUserKids(user.id);
+            const isActive = user.status === 'active';
             return (
-              <View key={kid.id} style={styles.rosterCard}>
-                <View style={styles.rosterInfo}>
-                  <Text style={styles.kidName}>{kid.name}</Text>
-                  <Text style={styles.kidAge}>{currentYear - kid.yearOfBirth} years old</Text>
-                  {parent && (
-                    <Text style={styles.parentName}>Parent: {parent.name}</Text>
-                  )}
+              <TouchableOpacity
+                key={user.id}
+                style={[
+                  styles.userCard,
+                  !isActive && styles.inactiveUserCard
+                ]}
+                onPress={() => {
+                  setSelectedUser(user);
+                  setModalVisible(true);
+                }}
+              >
+                <View style={styles.userHeader}>
+                  <View style={[
+                    styles.userAvatar,
+                    !isActive && styles.inactiveUserAvatar
+                  ]}>
+                    <User color={isActive ? "#1B5E20" : "#999"} size={20} />
+                  </View>
+                  <View style={styles.userInfo}>
+                    <View style={styles.userNameRow}>
+                      <Text style={[
+                        styles.userName,
+                        !isActive && styles.inactiveText
+                      ]}>{user.name}</Text>
+                      <View style={[
+                        styles.statusBadge,
+                        isActive ? styles.activeBadge : styles.inactiveBadge
+                      ]}>
+                        <Text style={[
+                          styles.statusText,
+                          isActive ? styles.activeStatusText : styles.inactiveStatusText
+                        ]}>
+                          {user.status || 'active'}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={[
+                      styles.userEmail,
+                      !isActive && styles.inactiveText
+                    ]}>{user.email}</Text>
+                    <Text style={[
+                      styles.userPhone,
+                      !isActive && styles.inactiveText
+                    ]}>{user.phone}</Text>
+                    <Text style={[
+                      styles.userRole,
+                      !isActive && styles.inactiveText
+                    ]}>Role: {user.role}</Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => {
+                      setSelectedUser(user);
+                      setActionModalVisible(true);
+                    }}
+                  >
+                    <MoreVertical color="#666" size={20} />
+                  </TouchableOpacity>
                 </View>
-              </View>
+                <View style={styles.userStats}>
+                  <Text style={[
+                    styles.kidCount,
+                    !isActive && styles.inactiveText
+                  ]}>{userKids.length} kids registered</Text>
+                </View>
+              </TouchableOpacity>
             );
           })
-        ) : (
-          <Text style={styles.emptyText}>No players in Team A</Text>
         )}
       </View>
 
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Team B Roster (Under 10)</Text>
-        {teamBRoster.length > 0 ? (
-          teamBRoster.map(kid => {
-            const parent = users.find(u => u.id === kid.parentId);
-            return (
-              <View key={kid.id} style={styles.rosterCard}>
-                <View style={styles.rosterInfo}>
-                  <Text style={styles.kidName}>{kid.name}</Text>
-                  <Text style={styles.kidAge}>{currentYear - kid.yearOfBirth} years old</Text>
-                  {parent && (
-                    <Text style={styles.parentName}>Parent: {parent.name}</Text>
-                  )}
-                </View>
-              </View>
-            );
-          })
-        ) : (
-          <Text style={styles.emptyText}>No players in Team B</Text>
-        )}
-      </View>
+
 
       <Modal
         animationType="slide"
@@ -169,16 +232,89 @@ export default function UsersScreen() {
                   <View key={kid.id} style={styles.modalKidCard}>
                     <Text style={styles.modalKidName}>{kid.name}</Text>
                     <Text style={styles.modalKidInfo}>
-                      Born {kid.yearOfBirth} • Team {kid.team}
+                      Age: {kid.age} • Team: {kid.team}
                     </Text>
                   </View>
                 ))}
                 
+                <View style={styles.modalActions}>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => {
+                      setActionModalVisible(true);
+                    }}
+                  >
+                    <Text style={styles.actionButtonText}>Manage User</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.closeButton}
+                    onPress={() => setModalVisible(false)}
+                  >
+                    <Text style={styles.closeButtonText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Action Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={actionModalVisible}
+        onRequestClose={() => setActionModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setActionModalVisible(false)}
+        >
+          <View style={styles.actionModalContent} onStartShouldSetResponder={() => true}>
+            {selectedUser && (
+              <>
+                <Text style={styles.actionModalTitle}>Manage {selectedUser.name}</Text>
+                
                 <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setModalVisible(false)}
+                  style={[
+                    styles.actionOption,
+                    selectedUser.status === 'active' ? styles.deactivateOption : styles.activateOption
+                  ]}
+                  onPress={() => {
+                    const newStatus = selectedUser.status === 'active' ? 'inactive' : 'active';
+                    handleUpdateUserStatus(selectedUser.id, newStatus);
+                  }}
+                  disabled={loading}
                 >
-                  <Text style={styles.closeButtonText}>Close</Text>
+                  {selectedUser.status === 'active' ? (
+                    <UserX color="#FF6B35" size={20} />
+                  ) : (
+                    <UserCheck color="#1B5E20" size={20} />
+                  )}
+                  <Text style={[
+                    styles.actionOptionText,
+                    selectedUser.status === 'active' ? styles.deactivateText : styles.activateText
+                  ]}>
+                    {selectedUser.status === 'active' ? 'Deactivate User' : 'Activate User'}
+                  </Text>
+                </TouchableOpacity>
+
+                {selectedUser.role !== 'admin' && (
+                  <TouchableOpacity
+                    style={[styles.actionOption, styles.deleteOption]}
+                    onPress={() => handleDeleteUser(selectedUser.id)}
+                    disabled={loading}
+                  >
+                    <Trash2 color="#DC2626" size={20} />
+                    <Text style={[styles.actionOptionText, styles.deleteText]}>Delete User</Text>
+                  </TouchableOpacity>
+                )}
+                
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setActionModalVisible(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -358,6 +494,129 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: '#fff',
+    fontWeight: '600',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    padding: 20,
+  },
+  inactiveUserCard: {
+    opacity: 0.7,
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF6B35',
+  },
+  inactiveUserAvatar: {
+    backgroundColor: '#FFF3F0',
+  },
+  userNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  inactiveText: {
+    color: '#999',
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    minWidth: 60,
+    alignItems: 'center',
+  },
+  activeBadge: {
+    backgroundColor: '#E8F5E9',
+  },
+  inactiveBadge: {
+    backgroundColor: '#FFF3F0',
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  activeStatusText: {
+    color: '#1B5E20',
+  },
+  inactiveStatusText: {
+    color: '#FF6B35',
+  },
+  userRole: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
+  actionButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+  },
+  actionButtonText: {
+    color: '#1B5E20',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  actionModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 24,
+    width: '90%',
+    maxWidth: 350,
+  },
+  actionModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  actionOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    gap: 12,
+  },
+  activateOption: {
+    backgroundColor: '#E8F5E9',
+  },
+  deactivateOption: {
+    backgroundColor: '#FFF3F0',
+  },
+  deleteOption: {
+    backgroundColor: '#FEF2F2',
+  },
+  actionOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  activateText: {
+    color: '#1B5E20',
+  },
+  deactivateText: {
+    color: '#FF6B35',
+  },
+  deleteText: {
+    color: '#DC2626',
+  },
+  cancelButton: {
+    backgroundColor: '#F5F5F5',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cancelButtonText: {
+    color: '#666',
     fontWeight: '600',
   },
 });
