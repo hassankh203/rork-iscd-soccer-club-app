@@ -1,11 +1,11 @@
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from "react-native";
-import { useSupabaseAuth } from "@/hooks/supabase-auth-context";
+import { useLocalAuth } from "@/hooks/local-auth-context";
 import { useApp } from "@/hooks/app-context";
 import { Users, DollarSign, Calendar, TrendingUp, LogOut } from "lucide-react-native";
 import { router } from "expo-router";
 
 export default function AdminDashboard() {
-  const { user, signOut } = useSupabaseAuth();
+  const { user, signOut } = useLocalAuth();
   const { kids, payments, trainingPolls, announcements } = useApp();
 
   const teamACount = kids.filter(k => k.team === 'A').length;
