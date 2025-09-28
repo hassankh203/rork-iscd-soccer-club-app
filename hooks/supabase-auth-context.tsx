@@ -99,7 +99,7 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
         
         if (session?.user) {
           try {
-            // Fetch additional user data from profiles table if it exists
+            // Try to fetch additional user data from profiles table if it exists
             const { data: profile } = await supabase
               .from('profiles')
               .select('*')
@@ -109,8 +109,9 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
             if (isMounted) {
               setUser(mapSupabaseUserToUser(session.user, profile));
             }
-          } catch (error) {
-            console.error('Error fetching profile:', error);
+          } catch {
+            // Ignore profile fetch errors and just use the basic user data
+            console.log('Profile not found or error fetching profile, using basic user data');
             if (isMounted) {
               setUser(mapSupabaseUserToUser(session.user));
             }
@@ -167,9 +168,9 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
           errorMessage = error.message;
         } else if (typeof error === 'object') {
           // Handle common Supabase error patterns
-          if (error.error_description) {
+          if ('error_description' in error && typeof error.error_description === 'string') {
             errorMessage = error.error_description;
-          } else if (error.msg) {
+          } else if ('msg' in error && typeof error.msg === 'string') {
             errorMessage = error.msg;
           } else {
             errorMessage = JSON.stringify(error);
@@ -233,7 +234,7 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
     }
     
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: email.toLowerCase(),
         password,
         options: {
@@ -256,9 +257,9 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
           errorMessage = error.message;
         } else if (typeof error === 'object') {
           // Handle common Supabase error patterns
-          if (error.error_description) {
+          if ('error_description' in error && typeof error.error_description === 'string') {
             errorMessage = error.error_description;
-          } else if (error.msg) {
+          } else if ('msg' in error && typeof error.msg === 'string') {
             errorMessage = error.msg;
           } else {
             errorMessage = JSON.stringify(error);

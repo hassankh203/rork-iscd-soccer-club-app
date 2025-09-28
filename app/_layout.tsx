@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SupabaseAuthProvider } from "@/hooks/supabase-auth-context";
 import { AppProvider } from "@/hooks/app-context";
 import { HadithProvider } from "@/hooks/hadith-context";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,16 +33,18 @@ export default function RootLayout() {
   const containerStyle = { flex: 1 };
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={containerStyle}>
-        <SupabaseAuthProvider>
-          <AppProvider>
-            <HadithProvider>
-              <RootLayoutNav />
-            </HadithProvider>
-          </AppProvider>
-        </SupabaseAuthProvider>
-      </GestureHandlerRootView>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <GestureHandlerRootView style={containerStyle}>
+          <SupabaseAuthProvider>
+            <AppProvider>
+              <HadithProvider>
+                <RootLayoutNav />
+              </HadithProvider>
+            </AppProvider>
+          </SupabaseAuthProvider>
+        </GestureHandlerRootView>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

@@ -151,7 +151,10 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   }, []);
 
   const loadData = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, skipping data load');
+      return;
+    }
     
     try {
       console.log('Loading app data for user:', user.id);
