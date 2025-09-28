@@ -29,6 +29,15 @@ export default function UsersScreen() {
   useEffect(() => {
     loadData();
   }, []);
+  
+  // Reload data when component becomes focused
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadData();
+    }, 5000); // Refresh every 5 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const loadData = async () => {
     try {

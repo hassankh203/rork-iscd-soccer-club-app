@@ -35,10 +35,11 @@ export default function SignInScreen() {
     setIsLoading(true);
     
     try {
-      console.log('Attempting sign in...');
+      console.log('Attempting sign in for:', email.trim());
       await signIn(email.trim(), password);
       console.log('Sign in successful, redirecting...');
-      router.replace('/');
+      // Don't redirect to '/' as it will redirect based on user role
+      // The useEffect in index.tsx will handle the redirect
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Sign in failed. Please try again.';
       console.error('Sign in error:', errorMessage);
@@ -175,7 +176,22 @@ export default function SignInScreen() {
                 <Text style={styles.demoAccountText}>Password: 123456</Text>
               </View>
               
+              <View style={styles.demoAccount}>
+                <Text style={styles.demoAccountTitle}>👨‍👩‍👧‍👦 Sample Parent Accounts</Text>
+                <Text style={styles.demoAccountText}>Email: parent1@test.com</Text>
+                <Text style={styles.demoAccountText}>Password: 123456</Text>
+                <Text style={styles.demoAccountText}>Email: parent2@test.com</Text>
+                <Text style={styles.demoAccountText}>Password: 123456</Text>
+              </View>
+              
               <Text style={styles.demoNote}>💡 You can also create new accounts using Sign Up</Text>
+              
+              <TouchableOpacity
+                style={styles.testDataButton}
+                onPress={() => router.push('/add-test-data')}
+              >
+                <Text style={styles.testDataButtonText}>🚀 Add Test Data & View All Credentials</Text>
+              </TouchableOpacity>
             </View>
 
             <TouchableOpacity
@@ -395,6 +411,18 @@ const styles = StyleSheet.create({
   },
   resendButtonText: {
     color: '#1B5E20',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  testDataButton: {
+    backgroundColor: '#4A90E2',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  testDataButtonText: {
+    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
