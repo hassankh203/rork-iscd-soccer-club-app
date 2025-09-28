@@ -3,7 +3,8 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SupabaseAuthProvider } from "@/hooks/supabase-auth-context";
+import { LocalAuthProvider } from "@/hooks/local-auth-context";
+import { LocalDataProvider } from "@/hooks/local-data-context";
 import { AppProvider } from "@/hooks/app-context";
 import { HadithProvider } from "@/hooks/hadith-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -36,13 +37,15 @@ export default function RootLayout() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView style={containerStyle}>
-          <SupabaseAuthProvider>
-            <AppProvider>
-              <HadithProvider>
-                <RootLayoutNav />
-              </HadithProvider>
-            </AppProvider>
-          </SupabaseAuthProvider>
+          <LocalAuthProvider>
+            <LocalDataProvider>
+              <AppProvider>
+                <HadithProvider>
+                  <RootLayoutNav />
+                </HadithProvider>
+              </AppProvider>
+            </LocalDataProvider>
+          </LocalAuthProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>
     </ErrorBoundary>

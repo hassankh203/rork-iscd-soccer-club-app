@@ -15,18 +15,15 @@ import {
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Mail, Lock, Eye, EyeOff, MapPin } from "lucide-react-native";
-import { useSupabaseAuth } from "@/hooks/supabase-auth-context";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { useLocalAuth } from "@/hooks/local-auth-context";
 
 export default function SignInScreen() {
-  const { signIn, resendConfirmation } = useSupabaseAuth();
+  const { signIn } = useLocalAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showResendButton, setShowResendButton] = useState(false);
 
   const handleSignIn = async () => {
     if (!email.trim() || !password) {
@@ -47,10 +44,7 @@ export default function SignInScreen() {
       console.error('Sign in error:', errorMessage);
       setError(errorMessage);
       
-      // Show resend confirmation button if email not confirmed
-      if (errorMessage.includes('Email not confirmed') || errorMessage.includes('confirmation link')) {
-        setShowResendButton(true);
-      }
+
       
       // Show alert for better user experience
       Alert.alert(
@@ -63,28 +57,7 @@ export default function SignInScreen() {
     }
   };
 
-  const handleResendConfirmation = async () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email address first.');
-      return;
-    }
 
-    setIsResendingConfirmation(true);
-    try {
-      await resendConfirmation(email.trim());
-      Alert.alert(
-        'Confirmation Email Sent',
-        'Please check your email for the new confirmation link.',
-        [{ text: 'OK', style: 'default' }]
-      );
-      setShowResendButton(false);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to resend confirmation email.';
-      Alert.alert('Error', errorMessage);
-    } finally {
-      setIsResendingConfirmation(false);
-    }
-  };
 
   const handleGetDirections = async () => {
     const locationUrl = 'https://maps.app.goo.gl/bS2xbmifNjdfYTBU7?g_st=aw';
@@ -170,19 +143,6 @@ export default function SignInScreen() {
             {error && (
               <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>{error}</Text>
-                {showResendButton && (
-                  <TouchableOpacity
-                    style={[styles.resendButton, isResendingConfirmation && styles.disabledButton]}
-                    onPress={handleResendConfirmation}
-                    disabled={isResendingConfirmation}
-                  >
-                    {isResendingConfirmation ? (
-                      <ActivityIndicator color="#1B5E20" size="small" />
-                    ) : (
-                      <Text style={styles.resendButtonText}>Resend Confirmation Email</Text>
-                    )}
-                  </TouchableOpacity>
-                )}
               </View>
             )}
 
@@ -205,33 +165,18 @@ export default function SignInScreen() {
               </TouchableOpacity>
             </View>
 
-            {!isSupabaseConfigured() && (
-              <View style={styles.demoSection}>
-                <Text style={styles.demoTitle}>🚀 Demo Mode Active</Text>
-                <Text style={styles.demoSubtitle}>Supabase not configured - using demo accounts</Text>
-                
-                <View style={styles.demoAccount}>
-                  <Text style={styles.demoAccountTitle}>👨‍💼 Admin Account</Text>
-                  <Text style={styles.demoAccountText}>Email: admin@iscd.org</Text>
-                  <Text style={styles.demoAccountText}>Password: 123456</Text>
-                </View>
-                
-                <View style={styles.demoAccount}>
-                  <Text style={styles.demoAccountTitle}>👨‍👩‍👧‍👦 Parent Account</Text>
-                  <Text style={styles.demoAccountText}>Email: parent@example.com</Text>
-                  <Text style={styles.demoAccountText}>Password: 654321</Text>
-                </View>
-                
-                <Text style={styles.demoNote}>💡 To use real accounts, configure Supabase in your .env file</Text>
+            <View style={styles.demoSection}>
+              <Text style={styles.demoTitle}>🚀 Local Storage Mode</Text>
+              <Text style={styles.demoSubtitle}>Using local SQLite database for authentication</Text>
+              
+              <View style={styles.demoAccount}>
+                <Text style={styles.demoAccountTitle}>👨‍💼 Default Admin Account</Text>
+                <Text style={styles.demoAccountText}>Email: admin@example.com</Text>
+                <Text style={styles.demoAccountText}>Password: 123456</Text>
               </View>
-            )}
-            
-            {isSupabaseConfigured() && (
-              <View style={styles.supabaseSection}>
-                <Text style={styles.supabaseTitle}>✅ Supabase Connected</Text>
-                <Text style={styles.supabaseSubtitle}>You can now create and sign in with real accounts</Text>
-              </View>
-            )}
+              
+              <Text style={styles.demoNote}>💡 You can also create new accounts using Sign Up</Text>
+            </View>
 
             <TouchableOpacity
               style={styles.directionsButton}

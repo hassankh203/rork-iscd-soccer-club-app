@@ -16,12 +16,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { MapPin, LogIn, UserPlus, Shield, BookOpen } from "lucide-react-native";
 
-import { useSupabaseAuth } from "@/hooks/supabase-auth-context";
+import { useLocalAuth } from "@/hooks/local-auth-context";
 import { useHadith } from "@/hooks/hadith-context";
 import { hadiths } from "@/constants/hadiths";
 
 export default function HomeScreen() {
-  const { user, isLoading } = useSupabaseAuth();
+  const { user, isLoading } = useLocalAuth();
   const { getHadithOfTheDay } = useHadith();
   const [hadithModalVisible, setHadithModalVisible] = useState(false);
   const [currentHadith, setCurrentHadith] = useState<typeof hadiths[0] | null>(null);
@@ -109,14 +109,7 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
             
-            <TouchableOpacity
-              style={[styles.secondaryButton, styles.debugButton]}
-              onPress={() => router.push('/debug-supabase')}
-            >
-              <Text style={[styles.secondaryButtonText, styles.debugButtonText]}>
-                🔧 Debug Supabase
-              </Text>
-            </TouchableOpacity>
+
           </View>
 
           <View style={styles.quickActions}>
