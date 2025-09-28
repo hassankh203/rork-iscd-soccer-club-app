@@ -155,6 +155,7 @@ export const [LocalDataProvider, useLocalData] = createContextHook(() => {
     console.log('✅ Admin access granted. Fetching all users...');
     const allUsers = await getAllUsers();
     console.log('📊 Retrieved users:', allUsers.length, 'users');
+    console.log('📊 Users data:', JSON.stringify(allUsers, null, 2));
     return allUsers;
   }, [user]);
 

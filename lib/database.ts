@@ -13,6 +13,8 @@ export const initDatabase = async () => {
     if (Platform.OS === 'web') {
       // For web, we'll use AsyncStorage as a fallback
       console.log('📱 Using AsyncStorage for web platform');
+      // Create default users for web
+      await createDefaultAdmin();
       return;
     }
     
@@ -26,6 +28,26 @@ export const initDatabase = async () => {
     console.error('❌ Failed to initialize database:', error);
     throw error;
   }
+};
+
+// Clear all data (for debugging)
+export const clearAllData = async () => {
+  console.log('🧹 Clearing all data...');
+  
+  if (Platform.OS === 'web') {
+    await AsyncStorage.multiRemove(['users', 'kids', 'payments', 'communications', 'media', 'currentUserId']);
+  } else {
+    // Clear SQLite tables
+    await db.execAsync('DELETE FROM communications');
+    await db.execAsync('DELETE FROM payments');
+    await db.execAsync('DELETE FROM kids');
+    await db.execAsync('DELETE FROM users');
+    await db.execAsync('DELETE FROM media_uploads');
+  }
+  
+  // Recreate default users
+  await createDefaultAdmin();
+  console.log('✅ All data cleared and defaults recreated');
 };
 
 // Create all necessary tables
@@ -126,26 +148,25 @@ const createDefaultAdmin = async () => {
     // Create sample parent users for testing
     const sampleUsers = [
       {
-        email: 'parent1@example.com',
+        email: 'parent1@test.com',
         password: '123456',
         name: 'John Smith',
         phone: '+1234567891',
         role: 'parent' as const
       },
       {
-        email: 'parent2@example.com',
+        email: 'parent2@test.com',
         password: '123456',
         name: 'Sarah Johnson',
         phone: '+1234567892',
         role: 'parent' as const
       },
       {
-        email: 'parent3@example.com',
+        email: 'parent3@test.com',
         password: '123456',
         name: 'Mike Davis',
         phone: '+1234567893',
-        role: 'parent' as const,
-        status: 'inactive' as const
+        role: 'parent' as const
       }
     ];
     
@@ -324,12 +345,29 @@ export const updateUser = async (id: string, updates: Partial<Omit<User, 'id' | 
 };
 
 export const authenticateUser = async (email: string, password: string): Promise<User | null> => {
+  console.log('🔐 Authenticating user:', email);
   const user = await getUserByEmail(email);
-  if (!user) return null;
+  if (!user) {
+    console.log('❌ User not found:', email);
+    return null;
+  }
+  
+  console.log('👤 User found:', user.email, 'Status:', user.status);
+  
+  // Check if user is active
+  if (user.status === 'inactive') {
+    console.log('❌ User is inactive:', email);
+    throw new Error('Account is inactive. Please contact administrator.');
+  }
   
   const hashedPassword = hashPassword(password);
-  if (user.password !== hashedPassword) return null;
+  console.log('🔑 Comparing passwords...');
+  if (user.password !== hashedPassword) {
+    console.log('❌ Password mismatch for:', email);
+    return null;
+  }
   
+  console.log('✅ Authentication successful for:', email);
   const { password: _, ...userWithoutPassword } = user;
   return userWithoutPassword;
 };

@@ -82,6 +82,10 @@ export const [LocalAuthProvider, useLocalAuth] = createContextHook<AuthState>(()
       console.log('🔧 Initializing local authentication...');
       
       try {
+        // Clear existing data for fresh start
+        console.log('🧹 Clearing existing data for fresh start...');
+        await AsyncStorage.multiRemove(['users', 'kids', 'payments', 'communications', 'media', 'currentUserId']);
+        
         // Initialize database
         await initDatabase();
         

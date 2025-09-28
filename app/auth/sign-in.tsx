@@ -182,6 +182,8 @@ export default function SignInScreen() {
                 <Text style={styles.demoAccountText}>Password: 123456</Text>
                 <Text style={styles.demoAccountText}>Email: parent2@test.com</Text>
                 <Text style={styles.demoAccountText}>Password: 123456</Text>
+                <Text style={styles.demoAccountText}>Email: parent3@test.com</Text>
+                <Text style={styles.demoAccountText}>Password: 123456</Text>
               </View>
               
               <Text style={styles.demoNote}>💡 You can also create new accounts using Sign Up</Text>
