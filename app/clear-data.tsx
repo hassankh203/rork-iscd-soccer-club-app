@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { clearAllUserData, clearAllData, getAllUsers } from '@/lib/database';
+import { clearAllUserData, clearAllData } from '@/lib/database';
+import { useLocalData } from '@/hooks/local-data-context';
 import { useRouter } from 'expo-router';
 import { Trash2, RefreshCw, Users, AlertTriangle } from 'lucide-react-native';
 
@@ -9,14 +10,17 @@ export default function ClearDataPage() {
   const [isClearing, setIsClearing] = useState(false);
   const [userCount, setUserCount] = useState<number | null>(null);
   const router = useRouter();
+  const { getUsers } = useLocalData();
 
   const checkUserCount = async () => {
     try {
-      const users = await getAllUsers();
+      console.log('🔄 Checking user count...');
+      const users = await getUsers();
       setUserCount(users.length);
-      console.log('📊 Current users:', users);
+      console.log('📊 Current users count:', users.length);
+      console.log('📊 Users data:', users);
     } catch (error) {
-      console.error('Error checking users:', error);
+      console.error('❌ Error checking users:', error);
       setUserCount(0);
     }
   };
@@ -33,12 +37,16 @@ export default function ClearDataPage() {
           onPress: async () => {
             setIsClearing(true);
             try {
+              console.log('🧹 Starting user data clear...');
               await clearAllUserData();
-              Alert.alert('Success', 'All user data has been cleared successfully!');
+              console.log('✅ User data cleared, refreshing count...');
+              // Wait a moment for data to be cleared
+              await new Promise(resolve => setTimeout(resolve, 500));
               await checkUserCount();
+              Alert.alert('Success', 'All user data has been cleared successfully!');
             } catch (error) {
-              console.error('Error clearing user data:', error);
-              Alert.alert('Error', 'Failed to clear user data. Check console for details.');
+              console.error('❌ Error clearing user data:', error);
+              Alert.alert('Error', `Failed to clear user data: ${error}`);
             } finally {
               setIsClearing(false);
             }
@@ -60,12 +68,16 @@ export default function ClearDataPage() {
           onPress: async () => {
             setIsClearing(true);
             try {
+              console.log('🧹 Starting complete data clear...');
               await clearAllData();
-              Alert.alert('Success', 'All data has been cleared and defaults recreated!');
+              console.log('✅ All data cleared, refreshing count...');
+              // Wait a moment for data to be cleared and recreated
+              await new Promise(resolve => setTimeout(resolve, 1000));
               await checkUserCount();
+              Alert.alert('Success', 'All data has been cleared and defaults recreated!');
             } catch (error) {
-              console.error('Error clearing all data:', error);
-              Alert.alert('Error', 'Failed to clear all data. Check console for details.');
+              console.error('❌ Error clearing all data:', error);
+              Alert.alert('Error', `Failed to clear all data: ${error}`);
             } finally {
               setIsClearing(false);
             }

@@ -34,47 +34,69 @@ export const initDatabase = async () => {
 export const clearAllData = async () => {
   console.log('🧹 Clearing all data...');
   
-  if (Platform.OS === 'web') {
-    await AsyncStorage.multiRemove(['users', 'kids', 'payments', 'communications', 'media', 'currentUserId']);
-  } else {
-    // Clear SQLite tables
-    await db.execAsync('DELETE FROM communications');
-    await db.execAsync('DELETE FROM payments');
-    await db.execAsync('DELETE FROM kids');
-    await db.execAsync('DELETE FROM users');
-    await db.execAsync('DELETE FROM media_uploads');
+  try {
+    if (Platform.OS === 'web') {
+      console.log('🌐 Web platform: Clearing AsyncStorage...');
+      await AsyncStorage.multiRemove(['users', 'kids', 'payments', 'communications', 'media', 'currentUserId']);
+      console.log('✅ AsyncStorage cleared');
+    } else {
+      console.log('📱 Native platform: Clearing SQLite tables...');
+      // Clear SQLite tables
+      await db.execAsync('DELETE FROM communications');
+      await db.execAsync('DELETE FROM payments');
+      await db.execAsync('DELETE FROM kids');
+      await db.execAsync('DELETE FROM users');
+      await db.execAsync('DELETE FROM media_uploads');
+      console.log('✅ SQLite tables cleared');
+    }
+    
+    // Recreate default users
+    console.log('👤 Recreating default admin...');
+    await createDefaultAdmin();
+    console.log('✅ All data cleared and defaults recreated');
+  } catch (error) {
+    console.error('❌ Error clearing all data:', error);
+    throw error;
   }
-  
-  // Recreate default users
-  await createDefaultAdmin();
-  console.log('✅ All data cleared and defaults recreated');
 };
 
 // Clear all user data only (keep admin)
 export const clearAllUserData = async () => {
   console.log('🧹 Clearing all user data (keeping admin)...');
   
-  if (Platform.OS === 'web') {
-    // Get current users
-    const users = await getStoredUsers();
-    // Keep only admin users
-    const adminUsers = users.filter(u => u.role === 'admin');
+  try {
+    if (Platform.OS === 'web') {
+      console.log('🌐 Web platform: Clearing user data from AsyncStorage...');
+      // Get current users
+      const users = await getStoredUsers();
+      console.log('📊 Current users before clear:', users.length);
+      
+      // Keep only admin users
+      const adminUsers = users.filter(u => u.role === 'admin');
+      console.log('👥 Admin users to keep:', adminUsers.length);
+      
+      // Clear all data and keep only admin users
+      await AsyncStorage.multiRemove(['kids', 'payments', 'communications', 'media', 'currentUserId']);
+      await AsyncStorage.setItem('users', JSON.stringify(adminUsers));
+      console.log('✅ AsyncStorage user data cleared');
+    } else {
+      console.log('📱 Native platform: Clearing user data from SQLite...');
+      // Clear SQLite tables but keep admin users
+      await db.execAsync('DELETE FROM communications');
+      await db.execAsync('DELETE FROM payments');
+      await db.execAsync('DELETE FROM kids');
+      await db.execAsync('DELETE FROM media_uploads');
+      await db.execAsync('DELETE FROM users WHERE role != "admin"');
+      // Clear current session
+      await AsyncStorage.removeItem('currentUserId');
+      console.log('✅ SQLite user data cleared');
+    }
     
-    // Clear all data and keep only admin users
-    await AsyncStorage.multiRemove(['kids', 'payments', 'communications', 'media', 'currentUserId']);
-    await AsyncStorage.setItem('users', JSON.stringify(adminUsers));
-  } else {
-    // Clear SQLite tables but keep admin users
-    await db.execAsync('DELETE FROM communications');
-    await db.execAsync('DELETE FROM payments');
-    await db.execAsync('DELETE FROM kids');
-    await db.execAsync('DELETE FROM media_uploads');
-    await db.execAsync('DELETE FROM users WHERE role != "admin"');
-    // Clear current session
-    await AsyncStorage.removeItem('currentUserId');
+    console.log('✅ All user data cleared (admin users preserved)');
+  } catch (error) {
+    console.error('❌ Error clearing user data:', error);
+    throw error;
   }
-  
-  console.log('✅ All user data cleared (admin users preserved)');
 };
 
 // Check if database has data
@@ -797,19 +819,27 @@ const getStoredMedia = async (): Promise<MediaUpload[]> => {
 
 // User management operations for admin
 export const getAllUsers = async (): Promise<User[]> => {
+  console.log('📊 Getting all users...');
+  
   if (Platform.OS === 'web') {
+    console.log('🌐 Web platform: Getting users from AsyncStorage...');
     const users = await getStoredUsers();
-    return users.map(user => {
+    console.log('📊 Found', users.length, 'users in AsyncStorage');
+    const usersWithoutPassword = users.map(user => {
       const { password, ...userWithoutPassword } = user;
       return userWithoutPassword;
     });
+    console.log('📊 Returning users:', JSON.stringify(usersWithoutPassword, null, 2));
+    return usersWithoutPassword;
   }
   
+  console.log('📱 Native platform: Getting users from SQLite...');
   const results = await db.getAllAsync(
     'SELECT id, email, name, phone, role, status, created_at FROM users ORDER BY created_at DESC'
   ) as any[];
   
-  return results.map(result => ({
+  console.log('📊 Found', results.length, 'users in SQLite');
+  const users = results.map(result => ({
     id: result.id,
     email: result.email,
     name: result.name,
@@ -818,30 +848,48 @@ export const getAllUsers = async (): Promise<User[]> => {
     status: result.status || 'active',
     createdAt: result.created_at
   }));
+  
+  console.log('📊 Returning users:', JSON.stringify(users, null, 2));
+  return users;
 };
 
 export const updateUserStatus = async (userId: string, status: 'active' | 'inactive'): Promise<void> => {
+  console.log('🔄 Updating user status:', userId, 'to', status);
+  
   if (Platform.OS === 'web') {
+    console.log('🌐 Web platform: Updating user status in AsyncStorage...');
     const users = await getStoredUsers();
     const userIndex = users.findIndex(u => u.id === userId);
-    if (userIndex === -1) throw new Error('User not found');
+    if (userIndex === -1) {
+      console.error('❌ User not found:', userId);
+      throw new Error('User not found');
+    }
     
+    console.log('📊 User found at index:', userIndex, 'Current status:', users[userIndex].status);
     users[userIndex] = { ...users[userIndex], status };
     await AsyncStorage.setItem('users', JSON.stringify(users));
+    console.log('✅ User status updated in AsyncStorage');
     return;
   }
   
+  console.log('📱 Native platform: Updating user status in SQLite...');
   await db.runAsync(
     'UPDATE users SET status = ?, updated_at = ? WHERE id = ?',
     [status, new Date().toISOString(), userId]
   );
+  console.log('✅ User status updated in SQLite');
 };
 
 export const deleteUser = async (userId: string): Promise<void> => {
+  console.log('🗑️ Deleting user:', userId);
+  
   if (Platform.OS === 'web') {
+    console.log('🌐 Web platform: Deleting user from AsyncStorage...');
     // Delete user and related data from AsyncStorage
     const users = await getStoredUsers();
+    console.log('📊 Users before delete:', users.length);
     const filteredUsers = users.filter(u => u.id !== userId);
+    console.log('📊 Users after delete:', filteredUsers.length);
     await AsyncStorage.setItem('users', JSON.stringify(filteredUsers));
     
     // Delete related kids
@@ -859,12 +907,15 @@ export const deleteUser = async (userId: string): Promise<void> => {
     const filteredCommunications = communications.filter(c => c.senderId !== userId && c.recipientId !== userId);
     await AsyncStorage.setItem('communications', JSON.stringify(filteredCommunications));
     
+    console.log('✅ User and related data deleted from AsyncStorage');
     return;
   }
   
+  console.log('📱 Native platform: Deleting user from SQLite...');
   // Delete user and cascade delete related data
   await db.runAsync('DELETE FROM communications WHERE sender_id = ? OR recipient_id = ?', [userId, userId]);
   await db.runAsync('DELETE FROM payments WHERE parent_id = ?', [userId]);
   await db.runAsync('DELETE FROM kids WHERE parent_id = ?', [userId]);
   await db.runAsync('DELETE FROM users WHERE id = ?', [userId]);
+  console.log('✅ User and related data deleted from SQLite');
 };

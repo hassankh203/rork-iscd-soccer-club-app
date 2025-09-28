@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -13,6 +13,7 @@ import {
 import { useLocalData } from "@/hooks/local-data-context";
 import { Search, User, MoreVertical, UserCheck, UserX, Trash2 } from "lucide-react-native";
 import { User as DbUser, Kid as DbKid } from "@/lib/database";
+import { useFocusEffect } from "@react-navigation/native";
 import React from "react";
 
 export default function UsersScreen() {
@@ -30,14 +31,13 @@ export default function UsersScreen() {
     loadData();
   }, []);
   
-  // Reload data when component becomes focused (removed auto-refresh for better performance)
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     loadData();
-  //   }, 5000); // Refresh every 5 seconds
-  //   
-  //   return () => clearInterval(interval);
-  // }, []);
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('📱 Users screen focused, refreshing data...');
+      loadData();
+    }, [])
+  );
 
   const loadData = async () => {
     try {
@@ -49,11 +49,12 @@ export default function UsersScreen() {
       ]);
       console.log('📊 Users loaded:', usersData.length, 'users');
       console.log('👶 Kids loaded:', kidsData.length, 'kids');
-      console.log('👥 Users data:', usersData);
+      console.log('👥 Users data:', JSON.stringify(usersData, null, 2));
       setUsers(usersData);
       setAllKids(kidsData);
     } catch (error) {
       console.error('❌ Failed to load data:', error);
+      console.error('❌ Error details:', error);
       Alert.alert('Error', `Failed to load users data: ${error}`);
     } finally {
       setLoading(false);
@@ -74,13 +75,17 @@ export default function UsersScreen() {
   const handleUpdateUserStatus = async (userId: string, newStatus: 'active' | 'inactive') => {
     try {
       setLoading(true);
+      console.log('🔄 Updating user status:', userId, 'to', newStatus);
       await updateUserStatusById(userId, newStatus);
+      console.log('✅ User status updated, refreshing data...');
+      // Wait a moment for the update to be processed
+      await new Promise(resolve => setTimeout(resolve, 300));
       await loadData();
       setActionModalVisible(false);
       Alert.alert('Success', `User status updated to ${newStatus}`);
     } catch (error) {
-      console.error('Failed to update user status:', error);
-      Alert.alert('Error', 'Failed to update user status');
+      console.error('❌ Failed to update user status:', error);
+      Alert.alert('Error', `Failed to update user status: ${error}`);
     } finally {
       setLoading(false);
     }
@@ -98,14 +103,18 @@ export default function UsersScreen() {
           onPress: async () => {
             try {
               setLoading(true);
+              console.log('🗑️ Deleting user:', userId);
               await deleteUserById(userId);
+              console.log('✅ User deleted, refreshing data...');
+              // Wait a moment for the deletion to be processed
+              await new Promise(resolve => setTimeout(resolve, 300));
               await loadData();
               setActionModalVisible(false);
               setModalVisible(false);
               Alert.alert('Success', 'User deleted successfully');
             } catch (error) {
-              console.error('Failed to delete user:', error);
-              Alert.alert('Error', 'Failed to delete user');
+              console.error('❌ Failed to delete user:', error);
+              Alert.alert('Error', `Failed to delete user: ${error}`);
             } finally {
               setLoading(false);
             }

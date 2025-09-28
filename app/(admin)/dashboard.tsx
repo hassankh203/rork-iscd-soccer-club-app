@@ -1,36 +1,66 @@
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useLocalAuth } from "@/hooks/local-auth-context";
 import { useLocalData } from "@/hooks/local-data-context";
-import { Users, DollarSign, Calendar, TrendingUp, LogOut } from "lucide-react-native";
+import { Users, DollarSign, Calendar, TrendingUp, LogOut, RefreshCw } from "lucide-react-native";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
-import { Kid, Payment } from "@/lib/database";
+import { useEffect, useState, useCallback } from "react";
+import { Kid, Payment, User } from "@/lib/database";
+import { useFocusEffect } from "@react-navigation/native";
 
 export default function AdminDashboard() {
   const { user, signOut } = useLocalAuth();
-  const { getKids, getPayments } = useLocalData();
+  const { getKids, getPayments, getUsers } = useLocalData();
   const [kids, setKids] = useState<Kid[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
 
-  const loadDashboardData = async () => {
+  // Refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('📱 Admin dashboard focused, refreshing data...');
+      loadDashboardData();
+    }, [])
+  );
+
+  const loadDashboardData = async (isRefresh = false) => {
     try {
-      setLoading(true);
-      const [kidsData, paymentsData] = await Promise.all([
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
+      console.log('📊 Loading dashboard data...');
+      const [kidsData, paymentsData, usersData] = await Promise.all([
         getKids(),
-        getPayments()
+        getPayments(),
+        getUsers()
       ]);
+      
+      console.log('📊 Dashboard data loaded:');
+      console.log('👶 Kids:', kidsData.length);
+      console.log('💰 Payments:', paymentsData.length);
+      console.log('👥 Users:', usersData.length);
+      
       setKids(kidsData);
       setPayments(paymentsData);
+      setUsers(usersData);
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      console.error('❌ Failed to load dashboard data:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    loadDashboardData(true);
   };
 
   const teamACount = kids.filter(k => k.team === 'Lions' || k.team === 'Tigers' || k.team === 'Eagles').length;
@@ -63,12 +93,27 @@ export default function AdminDashboard() {
             <Text style={styles.greeting}>Admin Dashboard</Text>
             <Text style={styles.userName}>{user?.name}</Text>
           </View>
-          <TouchableOpacity onPress={handleSignOut} style={styles.logoutButton}>
-            <LogOut color="#D4AF37" size={24} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              onPress={handleRefresh} 
+              style={styles.refreshButton}
+              disabled={refreshing}
+            >
+              <RefreshCw color="#D4AF37" size={20} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleSignOut} style={styles.logoutButton}>
+              <LogOut color="#D4AF37" size={24} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Users color="#D4AF37" size={24} />
+            <Text style={styles.statNumber}>{users.length}</Text>
+            <Text style={styles.statLabel}>Total Users</Text>
+          </View>
+          
           <View style={styles.statCard}>
             <Users color="#D4AF37" size={24} />
             <Text style={styles.statNumber}>{kids.length}</Text>
@@ -111,14 +156,26 @@ export default function AdminDashboard() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment Overview</Text>
+          <Text style={styles.sectionTitle}>System Overview</Text>
           <View style={styles.paymentStats}>
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>Total Users:</Text>
+              <Text style={styles.paymentValue}>{users.length}</Text>
+            </View>
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>Active Users:</Text>
+              <Text style={styles.paymentValue}>{users.filter(u => u.status === 'active').length}</Text>
+            </View>
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentLabel}>Total Kids:</Text>
+              <Text style={styles.paymentValue}>{kids.length}</Text>
+            </View>
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Paid Payments:</Text>
               <Text style={styles.paymentValue}>{paidPayments}</Text>
             </View>
             <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Pending Verification:</Text>
+              <Text style={styles.paymentLabel}>Pending Payments:</Text>
               <Text style={styles.paymentValue}>{pendingPayments}</Text>
             </View>
             <View style={styles.paymentRow}>
@@ -192,6 +249,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1B5E20',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  refreshButton: {
+    padding: 8,
+  },
   logoutButton: {
     padding: 8,
   },
@@ -203,7 +268,7 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    minWidth: '45%',
+    minWidth: '30%',
     backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
