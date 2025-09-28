@@ -108,6 +108,15 @@ export default function HomeScreen() {
                 Admin Portal
               </Text>
             </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.secondaryButton, styles.debugButton]}
+              onPress={() => router.push('/debug-supabase')}
+            >
+              <Text style={[styles.secondaryButtonText, styles.debugButtonText]}>
+                🔧 Debug Supabase
+              </Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.quickActions}>
@@ -250,6 +259,14 @@ const styles = StyleSheet.create({
   },
   adminButtonText: {
     color: '#D4AF37',
+  },
+  debugButton: {
+    backgroundColor: 'rgba(33, 150, 243, 0.15)',
+    borderWidth: 2,
+    borderColor: '#2196F3',
+  },
+  debugButtonText: {
+    color: '#2196F3',
   },
   quickActions: {
     flexDirection: 'row',

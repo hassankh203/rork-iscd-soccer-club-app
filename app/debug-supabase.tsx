@@ -28,6 +28,16 @@ export default function DebugSupabaseScreen() {
           <Text style={[styles.status, configured ? styles.success : styles.error]}>
             {configured ? '✅ Configured' : '❌ Not Configured'}
           </Text>
+          
+          {!configured && (
+            <View style={styles.setupInstructions}>
+              <Text style={styles.instructionTitle}>Setup Instructions:</Text>
+              <Text style={styles.instructionText}>1. Go to your Supabase dashboard</Text>
+              <Text style={styles.instructionText}>2. Navigate to SQL Editor</Text>
+              <Text style={styles.instructionText}>3. Run the SQL script from supabase-setup.sql</Text>
+              <Text style={styles.instructionText}>4. Disable email confirmation in Auth settings</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -62,6 +72,30 @@ export default function DebugSupabaseScreen() {
             }}
           >
             <Text style={styles.testButtonText}>Test Connection</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.testButton, { backgroundColor: '#2196F3', marginTop: 10 }]}
+            onPress={async () => {
+              try {
+                console.log('Testing database tables...');
+                const { data, error } = await supabase
+                  .from('profiles')
+                  .select('count')
+                  .limit(1);
+                
+                if (error) {
+                  Alert.alert('Database Test', `Tables not set up: ${error.message}\n\nPlease run the SQL setup script in your Supabase dashboard.`);
+                } else {
+                  Alert.alert('Database Test', 'Database tables are set up correctly! ✅');
+                }
+              } catch (err) {
+                console.error('Database test failed:', err);
+                Alert.alert('Database Test', `Failed: ${err}`);
+              }
+            }}
+          >
+            <Text style={styles.testButtonText}>Test Database Tables</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -138,5 +172,24 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  setupInstructions: {
+    marginTop: 15,
+    padding: 12,
+    backgroundColor: '#fff3cd',
+    borderRadius: 6,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ffc107',
+  },
+  instructionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#856404',
+    marginBottom: 8,
+  },
+  instructionText: {
+    fontSize: 12,
+    color: '#856404',
+    marginBottom: 4,
   },
 });

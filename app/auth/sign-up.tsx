@@ -67,7 +67,7 @@ export default function SignUpScreen() {
       await signUp(email, password, name, phone);
       Alert.alert(
         "Account Created!", 
-        "Please check your email and click the confirmation link to activate your account. You won't be able to sign in until you confirm your email.",
+        "Your account has been created successfully. You can now sign in with your credentials.",
         [
           {
             text: "OK",

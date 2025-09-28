@@ -182,7 +182,7 @@ export const [SupabaseAuthProvider, useSupabaseAuth] = createContextHook<AuthSta
         if (errorMessage.includes('Invalid login credentials')) {
           errorMessage = 'Invalid email or password. Please check your credentials and try again.';
         } else if (errorMessage.includes('Email not confirmed')) {
-          errorMessage = 'Please check your email and click the confirmation link before signing in. If you need a new confirmation email, use the "Resend Confirmation" option.';
+          errorMessage = 'Your account is not yet activated. Please contact the administrator to activate your account.';
         } else if (errorMessage.includes('Too many requests')) {
           errorMessage = 'Too many sign-in attempts. Please wait a moment and try again.';
         } else if (errorMessage.includes('Supabase not configured')) {
