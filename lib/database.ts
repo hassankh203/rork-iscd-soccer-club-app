@@ -50,6 +50,22 @@ export const clearAllData = async () => {
   console.log('✅ All data cleared and defaults recreated');
 };
 
+// Check if database has data
+export const hasExistingData = async (): Promise<boolean> => {
+  try {
+    if (Platform.OS === 'web') {
+      const users = await getStoredUsers();
+      return users.length > 0;
+    } else {
+      const result = await db.getFirstAsync('SELECT COUNT(*) as count FROM users') as any;
+      return result.count > 0;
+    }
+  } catch (error) {
+    console.log('Error checking existing data:', error);
+    return false;
+  }
+};
+
 // Create all necessary tables
 const createTables = async () => {
   const tables = [
@@ -133,8 +149,10 @@ const createTables = async () => {
 // Create default admin user and sample data
 const createDefaultAdmin = async () => {
   try {
+    console.log('🔧 Checking for default admin user...');
     const adminExists = await getUserByEmail('admin@example.com');
     if (!adminExists) {
+      console.log('👤 Creating default admin user...');
       await createUser({
         email: 'admin@example.com',
         password: '123456',
@@ -143,39 +161,48 @@ const createDefaultAdmin = async () => {
         role: 'admin'
       });
       console.log('✅ Default admin user created');
+    } else {
+      console.log('ℹ️ Default admin user already exists');
     }
     
-    // Create sample parent users for testing
-    const sampleUsers = [
-      {
-        email: 'parent1@test.com',
-        password: '123456',
-        name: 'John Smith',
-        phone: '+1234567891',
-        role: 'parent' as const
-      },
-      {
-        email: 'parent2@test.com',
-        password: '123456',
-        name: 'Sarah Johnson',
-        phone: '+1234567892',
-        role: 'parent' as const
-      },
-      {
-        email: 'parent3@test.com',
-        password: '123456',
-        name: 'Mike Davis',
-        phone: '+1234567893',
-        role: 'parent' as const
+    // Only create sample users if no data exists
+    const hasData = await hasExistingData();
+    if (!hasData || (Platform.OS === 'web' && (await getStoredUsers()).length <= 1)) {
+      console.log('📝 Creating sample parent users...');
+      // Create sample parent users for testing
+      const sampleUsers = [
+        {
+          email: 'parent1@test.com',
+          password: '123456',
+          name: 'John Smith',
+          phone: '+1234567891',
+          role: 'parent' as const
+        },
+        {
+          email: 'parent2@test.com',
+          password: '123456',
+          name: 'Sarah Johnson',
+          phone: '+1234567892',
+          role: 'parent' as const
+        },
+        {
+          email: 'parent3@test.com',
+          password: '123456',
+          name: 'Mike Davis',
+          phone: '+1234567893',
+          role: 'parent' as const
+        }
+      ];
+      
+      for (const userData of sampleUsers) {
+        const userExists = await getUserByEmail(userData.email);
+        if (!userExists) {
+          await createUser(userData);
+          console.log(`✅ Sample user created: ${userData.email}`);
+        }
       }
-    ];
-    
-    for (const userData of sampleUsers) {
-      const userExists = await getUserByEmail(userData.email);
-      if (!userExists) {
-        await createUser(userData);
-        console.log(`✅ Sample user created: ${userData.email}`);
-      }
+    } else {
+      console.log('ℹ️ Sample users already exist, skipping creation');
     }
   } catch (error) {
     console.log('ℹ️ Error creating default users:', error);

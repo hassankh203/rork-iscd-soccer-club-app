@@ -1,26 +1,60 @@
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useLocalAuth } from "@/hooks/local-auth-context";
-import { useApp } from "@/hooks/app-context";
+import { useLocalData } from "@/hooks/local-data-context";
 import { Users, DollarSign, Calendar, TrendingUp, LogOut } from "lucide-react-native";
 import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { Kid, Payment } from "@/lib/database";
 
 export default function AdminDashboard() {
   const { user, signOut } = useLocalAuth();
-  const { kids, payments, trainingPolls, announcements } = useApp();
+  const { getKids, getPayments } = useLocalData();
+  const [kids, setKids] = useState<Kid[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const teamACount = kids.filter(k => k.team === 'A').length;
-  const teamBCount = kids.filter(k => k.team === 'B').length;
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      const [kidsData, paymentsData] = await Promise.all([
+        getKids(),
+        getPayments()
+      ]);
+      setKids(kidsData);
+      setPayments(paymentsData);
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const teamACount = kids.filter(k => k.team === 'Lions' || k.team === 'Tigers' || k.team === 'Eagles').length;
+  const teamBCount = kids.filter(k => k.team === 'Cubs' || k.team === 'Panthers' || k.team === 'Hawks').length;
   const pendingPayments = payments.filter(p => p.status === 'pending').length;
-  const verifiedPayments = payments.filter(p => p.status === 'verified').length;
+  const paidPayments = payments.filter(p => p.status === 'paid').length;
   
   const totalRevenue = payments
-    .filter(p => p.status === 'verified')
+    .filter(p => p.status === 'paid')
     .reduce((sum, p) => sum + p.amount, 0);
 
   const handleSignOut = async () => {
     await signOut();
     router.replace('/');
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#1B5E20" />
+        <Text style={styles.loadingText}>Loading dashboard...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -49,8 +83,8 @@ export default function AdminDashboard() {
           
           <View style={styles.statCard}>
             <Calendar color="#D4AF37" size={24} />
-            <Text style={styles.statNumber}>{trainingPolls.length}</Text>
-            <Text style={styles.statLabel}>Training Events</Text>
+            <Text style={styles.statNumber}>{paidPayments}</Text>
+            <Text style={styles.statLabel}>Paid</Text>
           </View>
           
           <View style={styles.statCard}>
@@ -64,12 +98,14 @@ export default function AdminDashboard() {
           <Text style={styles.sectionTitle}>Team Distribution</Text>
           <View style={styles.teamStats}>
             <View style={styles.teamCard}>
-              <Text style={styles.teamName}>Team A (10+)</Text>
+              <Text style={styles.teamName}>Older Teams</Text>
               <Text style={styles.teamCount}>{teamACount} players</Text>
+              <Text style={styles.teamSubtext}>Lions, Tigers, Eagles</Text>
             </View>
             <View style={styles.teamCard}>
-              <Text style={styles.teamName}>Team B (Under 10)</Text>
+              <Text style={styles.teamName}>Younger Teams</Text>
               <Text style={styles.teamCount}>{teamBCount} players</Text>
+              <Text style={styles.teamSubtext}>Cubs, Panthers, Hawks</Text>
             </View>
           </View>
         </View>
@@ -78,8 +114,8 @@ export default function AdminDashboard() {
           <Text style={styles.sectionTitle}>Payment Overview</Text>
           <View style={styles.paymentStats}>
             <View style={styles.paymentRow}>
-              <Text style={styles.paymentLabel}>Verified Payments:</Text>
-              <Text style={styles.paymentValue}>{verifiedPayments}</Text>
+              <Text style={styles.paymentLabel}>Paid Payments:</Text>
+              <Text style={styles.paymentValue}>{paidPayments}</Text>
             </View>
             <View style={styles.paymentRow}>
               <Text style={styles.paymentLabel}>Pending Verification:</Text>
@@ -95,26 +131,26 @@ export default function AdminDashboard() {
         <View style={styles.quickActions}>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push('/communication')}
+            onPress={() => router.push('/(admin)/communication')}
           >
-            <Text style={styles.actionButtonText}>Send Announcement</Text>
+            <Text style={styles.actionButtonText}>Send Message</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionButton}
-            onPress={() => router.push('/fees')}
+            onPress={() => router.push('/(admin)/users')}
           >
-            <Text style={styles.actionButtonText}>Manage Fees</Text>
+            <Text style={styles.actionButtonText}>Manage Users</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <Text style={styles.sectionTitle}>Recent Registrations</Text>
           <View style={styles.activityList}>
-            {announcements.slice(-3).reverse().map(announcement => (
-              <View key={announcement.id} style={styles.activityItem}>
-                <Text style={styles.activityTitle}>Announcement: {announcement.title}</Text>
+            {kids.slice(-3).reverse().map(kid => (
+              <View key={kid.id} style={styles.activityItem}>
+                <Text style={styles.activityTitle}>New Player: {kid.name}</Text>
                 <Text style={styles.activityDate}>
-                  {new Date(announcement.createdAt).toLocaleDateString()}
+                  Team: {kid.team} • Age: {kid.age}
                 </Text>
               </View>
             ))}
@@ -128,6 +164,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
   },
   header: {
     flexDirection: 'row',
@@ -205,6 +252,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#1B5E20',
+  },
+  teamSubtext: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 4,
   },
   paymentStats: {
     backgroundColor: '#fff',

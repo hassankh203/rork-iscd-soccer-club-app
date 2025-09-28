@@ -35,17 +35,15 @@ export default function SignInScreen() {
     setIsLoading(true);
     
     try {
-      console.log('Attempting sign in for:', email.trim());
+      console.log('🔐 Attempting sign in for:', email.trim());
       await signIn(email.trim(), password);
-      console.log('Sign in successful, redirecting...');
-      // Don't redirect to '/' as it will redirect based on user role
-      // The useEffect in index.tsx will handle the redirect
+      console.log('✅ Sign in successful, navigating to home...');
+      // Navigate to home page which will redirect based on user role
+      router.replace('/');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Sign in failed. Please try again.';
-      console.error('Sign in error:', errorMessage);
+      console.error('❌ Sign in error:', errorMessage);
       setError(errorMessage);
-      
-
       
       // Show alert for better user experience
       Alert.alert(

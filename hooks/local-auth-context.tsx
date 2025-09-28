@@ -82,30 +82,30 @@ export const [LocalAuthProvider, useLocalAuth] = createContextHook<AuthState>(()
       console.log('🔧 Initializing local authentication...');
       
       try {
-        // Clear existing data for fresh start
-        console.log('🧹 Clearing existing data for fresh start...');
-        await AsyncStorage.multiRemove(['users', 'kids', 'payments', 'communications', 'media', 'currentUserId']);
-        
-        // Initialize database
+        // Initialize database first
         await initDatabase();
         
         // Try to restore session
         const storedUserId = await AsyncStorage.getItem('currentUserId');
         if (storedUserId && isMounted) {
+          console.log('🔄 Attempting to restore session for user ID:', storedUserId);
           const dbUser = await getUserById(storedUserId);
           if (dbUser) {
             setUser(mapDbUserToUser(dbUser));
-            console.log('✅ Session restored for:', dbUser.email);
+            console.log('✅ Session restored for:', dbUser.email, 'Role:', dbUser.role);
           } else {
-            // Clean up invalid session
+            console.log('⚠️ Invalid session, cleaning up...');
             await AsyncStorage.removeItem('currentUserId');
           }
+        } else {
+          console.log('ℹ️ No stored session found');
         }
       } catch (error) {
         console.error('❌ Failed to initialize auth:', error);
       } finally {
         if (isMounted) {
           setIsLoading(false);
+          console.log('✅ Auth initialization complete');
         }
       }
     };

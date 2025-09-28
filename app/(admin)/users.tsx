@@ -30,14 +30,14 @@ export default function UsersScreen() {
     loadData();
   }, []);
   
-  // Reload data when component becomes focused
-  useEffect(() => {
-    const interval = setInterval(() => {
-      loadData();
-    }, 5000); // Refresh every 5 seconds
-    
-    return () => clearInterval(interval);
-  }, []);
+  // Reload data when component becomes focused (removed auto-refresh for better performance)
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     loadData();
+  //   }, 5000); // Refresh every 5 seconds
+  //   
+  //   return () => clearInterval(interval);
+  // }, []);
 
   const loadData = async () => {
     try {
@@ -130,7 +130,16 @@ export default function UsersScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>All Users ({users.length})</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>All Users ({users.length})</Text>
+          <TouchableOpacity
+            style={styles.refreshButton}
+            onPress={loadData}
+            disabled={loading}
+          >
+            <Text style={styles.refreshButtonText}>Refresh</Text>
+          </TouchableOpacity>
+        </View>
         {loading ? (
           <Text style={styles.loadingText}>Loading users...</Text>
         ) : filteredUsers.length === 0 ? (
@@ -366,11 +375,27 @@ const styles = StyleSheet.create({
   section: {
     padding: 20,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 16,
+  },
+  refreshButton: {
+    backgroundColor: '#1B5E20',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  refreshButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   userCard: {
     backgroundColor: '#fff',

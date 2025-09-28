@@ -27,14 +27,15 @@ export default function HomeScreen() {
   const [currentHadith, setCurrentHadith] = useState<typeof hadiths[0] | null>(null);
 
   useEffect(() => {
-    if (user) {
+    if (user && !isLoading) {
+      console.log('🔄 User authenticated, redirecting...', user.email, user.role);
       if (user.role === 'admin') {
         router.replace('/(admin)/dashboard');
       } else {
         router.replace('/(parent)/dashboard');
       }
     }
-  }, [user]);
+  }, [user, isLoading]);
 
   const openFieldDirections = () => {
     const url = "https://maps.app.goo.gl/bS2xbmifNjdfYTBU7?g_st=aw";
