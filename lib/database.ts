@@ -50,6 +50,33 @@ export const clearAllData = async () => {
   console.log('✅ All data cleared and defaults recreated');
 };
 
+// Clear all user data only (keep admin)
+export const clearAllUserData = async () => {
+  console.log('🧹 Clearing all user data (keeping admin)...');
+  
+  if (Platform.OS === 'web') {
+    // Get current users
+    const users = await getStoredUsers();
+    // Keep only admin users
+    const adminUsers = users.filter(u => u.role === 'admin');
+    
+    // Clear all data and keep only admin users
+    await AsyncStorage.multiRemove(['kids', 'payments', 'communications', 'media', 'currentUserId']);
+    await AsyncStorage.setItem('users', JSON.stringify(adminUsers));
+  } else {
+    // Clear SQLite tables but keep admin users
+    await db.execAsync('DELETE FROM communications');
+    await db.execAsync('DELETE FROM payments');
+    await db.execAsync('DELETE FROM kids');
+    await db.execAsync('DELETE FROM media_uploads');
+    await db.execAsync('DELETE FROM users WHERE role != "admin"');
+    // Clear current session
+    await AsyncStorage.removeItem('currentUserId');
+  }
+  
+  console.log('✅ All user data cleared (admin users preserved)');
+};
+
 // Check if database has data
 export const hasExistingData = async (): Promise<boolean> => {
   try {
