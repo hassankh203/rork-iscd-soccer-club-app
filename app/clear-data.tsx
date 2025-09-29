@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { clearAllUserData, clearAllData } from '@/lib/database';
+import { clearAllUserData, clearAllData, completeReset } from '@/lib/database';
 import { useLocalData } from '@/hooks/local-data-context';
 import { useRouter } from 'expo-router';
 import { Trash2, RefreshCw, Users, AlertTriangle } from 'lucide-react-native';
@@ -87,6 +87,37 @@ export default function ClearDataPage() {
     );
   };
 
+  const handleCompleteReset = async () => {
+    Alert.alert(
+      'COMPLETE RESET',
+      'This will remove ALL users including admin. The app will be completely empty with NO users at all. Are you absolutely sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'RESET EVERYTHING',
+          style: 'destructive',
+          onPress: async () => {
+            setIsClearing(true);
+            try {
+              console.log('🔥 Starting complete reset - removing ALL users...');
+              await completeReset();
+              console.log('✅ Complete reset finished, refreshing count...');
+              // Wait a moment for data to be cleared
+              await new Promise(resolve => setTimeout(resolve, 500));
+              await checkUserCount();
+              Alert.alert('Complete Reset', 'ALL users have been removed. The app is now completely empty.');
+            } catch (error) {
+              console.error('❌ Error during complete reset:', error);
+              Alert.alert('Error', `Failed to complete reset: ${error}`);
+            } finally {
+              setIsClearing(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   React.useEffect(() => {
     checkUserCount();
   }, []);
@@ -144,6 +175,21 @@ export default function ClearDataPage() {
 
           <Text style={styles.description}>
             Removes ALL data and recreates default admin user (admin@example.com / 123456).
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.button, styles.completeResetButton]}
+            onPress={handleCompleteReset}
+            disabled={isClearing}
+          >
+            <Trash2 size={20} color="#FFF" />
+            <Text style={styles.buttonText}>
+              {isClearing ? 'Resetting...' : 'COMPLETE RESET - NO USERS'}
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={styles.description}>
+            ⚠️ DANGER: Removes ALL users including admin. App will be completely empty.
           </Text>
         </View>
 
@@ -236,6 +282,12 @@ const styles = StyleSheet.create({
   clearAllButton: {
     backgroundColor: '#FF6B6B',
     marginTop: 20,
+  },
+  completeResetButton: {
+    backgroundColor: '#8B0000',
+    marginTop: 20,
+    borderWidth: 2,
+    borderColor: '#FF0000',
   },
   buttonText: {
     color: '#FFF',

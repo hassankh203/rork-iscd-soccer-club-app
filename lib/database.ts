@@ -60,6 +60,33 @@ export const clearAllData = async () => {
   }
 };
 
+// Complete reset - removes ALL users including admin
+export const completeReset = async () => {
+  console.log('🔥 Starting complete reset - removing ALL users...');
+  
+  try {
+    if (Platform.OS === 'web') {
+      console.log('🌐 Web platform: Complete reset of AsyncStorage...');
+      await AsyncStorage.multiRemove(['users', 'kids', 'payments', 'communications', 'media', 'currentUserId']);
+      console.log('✅ AsyncStorage completely cleared');
+    } else {
+      console.log('📱 Native platform: Complete reset of SQLite tables...');
+      // Clear SQLite tables completely
+      await db.execAsync('DELETE FROM communications');
+      await db.execAsync('DELETE FROM payments');
+      await db.execAsync('DELETE FROM kids');
+      await db.execAsync('DELETE FROM users');
+      await db.execAsync('DELETE FROM media_uploads');
+      console.log('✅ SQLite tables completely cleared');
+    }
+    
+    console.log('✅ Complete reset finished - NO users remain');
+  } catch (error) {
+    console.error('❌ Error during complete reset:', error);
+    throw error;
+  }
+};
+
 // Clear all user data only (keep admin)
 export const clearAllUserData = async () => {
   console.log('🧹 Clearing all user data (keeping admin)...');
@@ -256,6 +283,13 @@ const createDefaultAdmin = async () => {
   } catch (error) {
     console.log('ℹ️ Error creating default users:', error);
   }
+};
+
+// Create empty database with no users at all
+const createEmptyDatabase = async () => {
+  console.log('🔧 Creating completely empty database...');
+  // This function intentionally creates NO users at all
+  console.log('✅ Empty database created - no users exist');
 };
 
 // Generate UUID

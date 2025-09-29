@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { MapPin, LogIn, UserPlus, Shield, BookOpen } from "lucide-react-native";
+import { MapPin, LogIn, UserPlus, Shield, BookOpen, Settings } from "lucide-react-native";
 
 import { useLocalAuth } from "@/hooks/local-auth-context";
 import { useHadith } from "@/hooks/hadith-context";
@@ -109,7 +109,16 @@ export default function HomeScreen() {
                 Admin Portal
               </Text>
             </TouchableOpacity>
-            
+
+            <TouchableOpacity
+              style={[styles.secondaryButton, styles.debugButton]}
+              onPress={() => router.push('/clear-data')}
+            >
+              <Settings color="#2196F3" size={24} />
+              <Text style={[styles.secondaryButtonText, styles.debugButtonText]}>
+                Reset App Data
+              </Text>
+            </TouchableOpacity>
 
           </View>
 
