@@ -1,136 +1,195 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { clearAllUserData, clearAllData, completeReset } from '@/lib/database';
+import { 
+  clearAllUserData, 
+  clearAllData, 
+  completeReset, 
+  resetToFreshState, 
+  resetWithSampleData 
+} from '@/lib/database';
 import { useLocalData } from '@/hooks/local-data-context';
-import { useRouter } from 'expo-router';
-import { Trash2, RefreshCw, Users, AlertTriangle } from 'lucide-react-native';
+import { useLocalAuth } from '@/hooks/local-auth-context';
+import { useRouter, Stack } from 'expo-router';
+import { Trash2, RefreshCw, Users, AlertTriangle, Database, RotateCcw } from 'lucide-react-native';
+
+type ResetOption = {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  color: string;
+  action: () => Promise<void>;
+  confirmTitle: string;
+  confirmMessage: string;
+  successMessage: string;
+  dangerous?: boolean;
+};
 
 export default function ClearDataPage() {
-  const [isClearing, setIsClearing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingOption, setProcessingOption] = useState<string | null>(null);
   const [userCount, setUserCount] = useState<number | null>(null);
   const router = useRouter();
   const { getUsers } = useLocalData();
+  const { signOut } = useLocalAuth();
 
-  const checkUserCount = async () => {
+  const resetOptions: ResetOption[] = [
+    {
+      id: 'complete',
+      title: 'Complete Reset',
+      description: 'Remove ALL users including admin. Creates completely empty app.',
+      icon: <Trash2 size={24} color="#dc3545" />,
+      color: '#dc3545',
+      action: completeReset,
+      confirmTitle: 'Complete Reset',
+      confirmMessage: 'This will remove ALL users including admin accounts. The app will be completely empty with no users at all. You will need to create new accounts from scratch.',
+      successMessage: 'Complete reset successful. App is now empty with no users.',
+      dangerous: true
+    },
+    {
+      id: 'fresh',
+      title: 'Reset to Fresh State',
+      description: 'Clear all data but keep admin user only. Clean slate with admin access.',
+      icon: <RotateCcw size={24} color="#fd7e14" />,
+      color: '#fd7e14',
+      action: resetToFreshState,
+      confirmTitle: 'Reset to Fresh State',
+      confirmMessage: 'This will clear all data and users except the admin account. You will have a clean app with only admin access.',
+      successMessage: 'Reset to fresh state successful. Only admin user remains.'
+    },
+    {
+      id: 'sample',
+      title: 'Reset with Sample Data',
+      description: 'Clear all data and populate with comprehensive sample users, kids, payments, and communications.',
+      icon: <Database size={24} color="#198754" />,
+      color: '#198754',
+      action: resetWithSampleData,
+      confirmTitle: 'Reset with Sample Data',
+      confirmMessage: 'This will clear all existing data and create sample users, kids, payments, and communications for testing purposes.',
+      successMessage: 'Reset with sample data successful. Sample users and data created.'
+    },
+    {
+      id: 'users',
+      title: 'Clear User Data Only',
+      description: 'Remove all parent users and their data, but keep admin users.',
+      icon: <Users size={24} color="#6f42c1" />,
+      color: '#6f42c1',
+      action: clearAllUserData,
+      confirmTitle: 'Clear User Data',
+      confirmMessage: 'This will remove all parent users and their associated kids, payments, and communications. Admin users will be preserved.',
+      successMessage: 'User data cleared successfully. Admin users preserved.'
+    },
+    {
+      id: 'legacy',
+      title: 'Legacy Clear All (Keep Admin)',
+      description: 'Original clear function - removes all data but recreates admin and sample users.',
+      icon: <RefreshCw size={24} color="#0d6efd" />,
+      color: '#0d6efd',
+      action: clearAllData,
+      confirmTitle: 'Legacy Clear All Data',
+      confirmMessage: 'This will clear all data and recreate the default admin user with sample parent users.',
+      successMessage: 'Data cleared successfully. Default users recreated.'
+    }
+  ];
+
+  const checkUserCount = useCallback(async () => {
     try {
       console.log('🔄 Checking user count...');
       const users = await getUsers();
       setUserCount(users.length);
       console.log('📊 Current users count:', users.length);
-      console.log('📊 Users data:', users);
     } catch (error) {
       console.error('❌ Error checking users:', error);
       setUserCount(0);
     }
-  };
+  }, [getUsers]);
 
-  const handleClearUserData = async () => {
+  const handleReset = async (option: ResetOption) => {
     Alert.alert(
-      'Clear User Data',
-      'This will remove all parent users, kids, payments, and communications but keep admin users. Are you sure?',
+      option.confirmTitle,
+      option.confirmMessage + '\n\nThis action cannot be undone. Are you sure you want to continue?',
       [
-        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Clear User Data',
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Proceed',
           style: 'destructive',
           onPress: async () => {
-            setIsClearing(true);
             try {
-              console.log('🧹 Starting user data clear...');
-              await clearAllUserData();
-              console.log('✅ User data cleared, refreshing count...');
-              // Wait a moment for data to be cleared
+              setIsProcessing(true);
+              setProcessingOption(option.id);
+              console.log(`🔄 Starting ${option.title}...`);
+              
+              await option.action();
+              
+              console.log(`✅ ${option.title} completed successfully`);
+              
+              // Sign out current user if it's a dangerous operation
+              if (option.dangerous || option.id === 'fresh' || option.id === 'sample') {
+                await signOut();
+              }
+              
+              // Wait a moment then refresh count
               await new Promise(resolve => setTimeout(resolve, 500));
               await checkUserCount();
-              Alert.alert('Success', 'All user data has been cleared successfully!');
+              
+              Alert.alert(
+                'Success',
+                option.successMessage + (option.dangerous || option.id === 'fresh' || option.id === 'sample' ? ' You will now be redirected to the login screen.' : ''),
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      if (option.dangerous || option.id === 'fresh' || option.id === 'sample') {
+                        router.replace('/');
+                      }
+                    },
+                  },
+                ]
+              );
             } catch (error) {
-              console.error('❌ Error clearing user data:', error);
-              Alert.alert('Error', `Failed to clear user data: ${error}`);
+              console.error(`❌ Error during ${option.title}:`, error);
+              Alert.alert(
+                'Error',
+                `Failed to ${option.title.toLowerCase()}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                [{ text: 'OK' }]
+              );
             } finally {
-              setIsClearing(false);
+              setIsProcessing(false);
+              setProcessingOption(null);
             }
-          }
-        }
-      ]
-    );
-  };
-
-  const handleClearAllData = async () => {
-    Alert.alert(
-      'Clear All Data',
-      'This will remove ALL data including admin users and recreate default admin. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear All Data',
-          style: 'destructive',
-          onPress: async () => {
-            setIsClearing(true);
-            try {
-              console.log('🧹 Starting complete data clear...');
-              await clearAllData();
-              console.log('✅ All data cleared, refreshing count...');
-              // Wait a moment for data to be cleared and recreated
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              await checkUserCount();
-              Alert.alert('Success', 'All data has been cleared and defaults recreated!');
-            } catch (error) {
-              console.error('❌ Error clearing all data:', error);
-              Alert.alert('Error', `Failed to clear all data: ${error}`);
-            } finally {
-              setIsClearing(false);
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  const handleCompleteReset = async () => {
-    Alert.alert(
-      'COMPLETE RESET',
-      'This will remove ALL users including admin. The app will be completely empty with NO users at all. Are you absolutely sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'RESET EVERYTHING',
-          style: 'destructive',
-          onPress: async () => {
-            setIsClearing(true);
-            try {
-              console.log('🔥 Starting complete reset - removing ALL users...');
-              await completeReset();
-              console.log('✅ Complete reset finished, refreshing count...');
-              // Wait a moment for data to be cleared
-              await new Promise(resolve => setTimeout(resolve, 500));
-              await checkUserCount();
-              Alert.alert('Complete Reset', 'ALL users have been removed. The app is now completely empty.');
-            } catch (error) {
-              console.error('❌ Error during complete reset:', error);
-              Alert.alert('Error', `Failed to complete reset: ${error}`);
-            } finally {
-              setIsClearing(false);
-            }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
   React.useEffect(() => {
     checkUserCount();
-  }, []);
+  }, [checkUserCount]);
 
   return (
     <SafeAreaView style={styles.container}>
+      <Stack.Screen 
+        options={{ 
+          title: 'Reset Options',
+          headerStyle: { backgroundColor: '#f8f9fa' },
+          headerTintColor: '#333',
+        }} 
+      />
+      
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.header}>
-          <AlertTriangle size={32} color="#FF6B6B" />
-          <Text style={styles.title}>Data Management</Text>
-          <Text style={styles.subtitle}>Clear app data for debugging</Text>
+        <View style={styles.warningContainer}>
+          <AlertTriangle size={48} color="#ff6b6b" />
+          <Text style={styles.warningTitle}>Database Reset Options</Text>
+          <Text style={styles.warningText}>
+            Choose the appropriate reset option for your needs. All operations are irreversible.
+          </Text>
         </View>
-
+        
         <View style={styles.infoCard}>
           <Users size={24} color="#4ECDC4" />
           <Text style={styles.infoText}>
@@ -139,66 +198,59 @@ export default function ClearDataPage() {
           <TouchableOpacity 
             style={styles.refreshButton} 
             onPress={checkUserCount}
-            disabled={isClearing}
+            disabled={isProcessing}
           >
             <RefreshCw size={16} color="#4ECDC4" />
             <Text style={styles.refreshText}>Refresh</Text>
           </TouchableOpacity>
         </View>
-
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, styles.clearUserButton]}
-            onPress={handleClearUserData}
-            disabled={isClearing}
+        
+        {resetOptions.map((option) => (
+          <TouchableOpacity 
+            key={option.id}
+            style={[
+              styles.optionCard,
+              { borderLeftColor: option.color },
+              isProcessing && processingOption !== option.id && styles.optionCardDisabled
+            ]}
+            onPress={() => handleReset(option)}
+            disabled={isProcessing}
           >
-            <Trash2 size={20} color="#FFF" />
-            <Text style={styles.buttonText}>
-              {isClearing ? 'Clearing...' : 'Clear User Data Only'}
-            </Text>
+            <View style={styles.optionHeader}>
+              <View style={styles.optionIcon}>
+                {isProcessing && processingOption === option.id ? (
+                  <RefreshCw size={24} color={option.color} style={styles.spinning} />
+                ) : (
+                  option.icon
+                )}
+              </View>
+              <View style={styles.optionContent}>
+                <Text style={[styles.optionTitle, { color: option.color }]}>
+                  {option.title}
+                </Text>
+                <Text style={styles.optionDescription}>
+                  {option.description}
+                </Text>
+              </View>
+            </View>
+            
+            {isProcessing && processingOption === option.id && (
+              <View style={styles.processingIndicator}>
+                <Text style={styles.processingText}>Processing...</Text>
+              </View>
+            )}
           </TouchableOpacity>
-
-          <Text style={styles.description}>
-            Removes all parent users, kids, payments, and communications. Keeps admin users.
-          </Text>
-
-          <TouchableOpacity
-            style={[styles.button, styles.clearAllButton]}
-            onPress={handleClearAllData}
-            disabled={isClearing}
-          >
-            <Trash2 size={20} color="#FFF" />
-            <Text style={styles.buttonText}>
-              {isClearing ? 'Clearing...' : 'Clear All Data'}
-            </Text>
-          </TouchableOpacity>
-
-          <Text style={styles.description}>
-            Removes ALL data and recreates default admin user (admin@example.com / 123456).
-          </Text>
-
-          <TouchableOpacity
-            style={[styles.button, styles.completeResetButton]}
-            onPress={handleCompleteReset}
-            disabled={isClearing}
-          >
-            <Trash2 size={20} color="#FFF" />
-            <Text style={styles.buttonText}>
-              {isClearing ? 'Resetting...' : 'COMPLETE RESET - NO USERS'}
-            </Text>
-          </TouchableOpacity>
-
-          <Text style={styles.description}>
-            ⚠️ DANGER: Removes ALL users including admin. App will be completely empty.
-          </Text>
+        ))}
+        
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoTitle}>Important Notes:</Text>
+          <Text style={styles.infoItem}>• All reset operations are permanent and cannot be undone</Text>
+          <Text style={styles.infoItem}>• You will be signed out after dangerous reset operations</Text>
+          <Text style={styles.infoItem}>• Sample data includes 5 parents, 8 kids, payments, and communications</Text>
+          <Text style={styles.infoItem}>• Admin credentials: admin@example.com / 123456</Text>
+          <Text style={styles.infoItem}>• Sample user passwords are all: 123456</Text>
         </View>
-
-        <View style={styles.credentialsCard}>
-          <Text style={styles.credentialsTitle}>Default Admin Credentials</Text>
-          <Text style={styles.credentialsText}>Email: admin@example.com</Text>
-          <Text style={styles.credentialsText}>Password: 123456</Text>
-        </View>
-
+        
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
@@ -213,25 +265,38 @@ export default function ClearDataPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#f8f9fa',
   },
   content: {
     padding: 20,
+    flexGrow: 1,
   },
-  header: {
+  warningContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 24,
     alignItems: 'center',
-    marginBottom: 30,
+    borderWidth: 2,
+    borderColor: '#ff6b6b',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  title: {
+  warningTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2C3E50',
-    marginTop: 10,
+    color: '#ff6b6b',
+    marginTop: 12,
+    marginBottom: 16,
   },
-  subtitle: {
+  warningText: {
     fontSize: 16,
-    color: '#7F8C8D',
-    marginTop: 5,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
   },
   infoCard: {
     backgroundColor: '#FFF',
@@ -265,62 +330,74 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 14,
   },
-  buttonContainer: {
-    marginBottom: 30,
-  },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
+  optionCard: {
+    backgroundColor: '#fff',
     borderRadius: 12,
-    marginBottom: 10,
-  },
-  clearUserButton: {
-    backgroundColor: '#FF9500',
-  },
-  clearAllButton: {
-    backgroundColor: '#FF6B6B',
-    marginTop: 20,
-  },
-  completeResetButton: {
-    backgroundColor: '#8B0000',
-    marginTop: 20,
-    borderWidth: 2,
-    borderColor: '#FF0000',
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  description: {
-    fontSize: 14,
-    color: '#7F8C8D',
-    textAlign: 'center',
-    marginBottom: 10,
-    paddingHorizontal: 20,
-  },
-  credentialsCard: {
-    backgroundColor: '#E8F8F7',
     padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
+    marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#4ECDC4',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  credentialsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2C3E50',
-    marginBottom: 10,
+  optionCardDisabled: {
+    opacity: 0.5,
   },
-  credentialsText: {
+  optionHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  optionIcon: {
+    marginRight: 16,
+    marginTop: 2,
+  },
+  optionContent: {
+    flex: 1,
+  },
+  optionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  optionDescription: {
     fontSize: 14,
-    color: '#34495E',
-    fontFamily: 'monospace',
-    marginBottom: 5,
+    color: '#666',
+    lineHeight: 20,
+  },
+  processingIndicator: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  processingText: {
+    fontSize: 14,
+    color: '#666',
+    fontStyle: 'italic',
+  },
+  spinning: {
+    // Add rotation animation if needed
+  },
+  infoContainer: {
+    backgroundColor: '#e3f2fd',
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 8,
+    marginBottom: 20,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1976d2',
+    marginBottom: 12,
+  },
+  infoItem: {
+    fontSize: 14,
+    color: '#1565c0',
+    marginBottom: 6,
+    lineHeight: 20,
   },
   backButton: {
     alignSelf: 'center',

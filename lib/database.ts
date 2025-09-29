@@ -65,6 +65,9 @@ export const completeReset = async () => {
   console.log('🔥 Starting complete reset - removing ALL users...');
   
   try {
+    // Clear current session first
+    await AsyncStorage.removeItem('currentUserId');
+    
     if (Platform.OS === 'web') {
       console.log('🌐 Web platform: Complete reset of AsyncStorage...');
       await AsyncStorage.multiRemove(['users', 'kids', 'payments', 'communications', 'media', 'currentUserId']);
@@ -83,6 +86,207 @@ export const completeReset = async () => {
     console.log('✅ Complete reset finished - NO users remain');
   } catch (error) {
     console.error('❌ Error during complete reset:', error);
+    throw error;
+  }
+};
+
+// Reset to fresh state with only admin
+export const resetToFreshState = async () => {
+  console.log('🔄 Resetting to fresh state with admin only...');
+  
+  try {
+    // Clear current session first
+    await AsyncStorage.removeItem('currentUserId');
+    
+    if (Platform.OS === 'web') {
+      console.log('🌐 Web platform: Resetting AsyncStorage to fresh state...');
+      await AsyncStorage.multiRemove(['users', 'kids', 'payments', 'communications', 'media', 'currentUserId']);
+      console.log('✅ AsyncStorage cleared');
+    } else {
+      console.log('📱 Native platform: Resetting SQLite to fresh state...');
+      // Clear SQLite tables completely
+      await db.execAsync('DELETE FROM communications');
+      await db.execAsync('DELETE FROM payments');
+      await db.execAsync('DELETE FROM kids');
+      await db.execAsync('DELETE FROM users');
+      await db.execAsync('DELETE FROM media_uploads');
+      console.log('✅ SQLite tables cleared');
+    }
+    
+    // Recreate only the admin user
+    console.log('👤 Creating fresh admin user...');
+    await createDefaultAdmin();
+    console.log('✅ Reset to fresh state complete - only admin exists');
+  } catch (error) {
+    console.error('❌ Error during fresh state reset:', error);
+    throw error;
+  }
+};
+
+// Reset with sample data
+export const resetWithSampleData = async () => {
+  console.log('🔄 Resetting with sample data...');
+  
+  try {
+    // Clear current session first
+    await AsyncStorage.removeItem('currentUserId');
+    
+    if (Platform.OS === 'web') {
+      console.log('🌐 Web platform: Resetting AsyncStorage with sample data...');
+      await AsyncStorage.multiRemove(['users', 'kids', 'payments', 'communications', 'media', 'currentUserId']);
+      console.log('✅ AsyncStorage cleared');
+    } else {
+      console.log('📱 Native platform: Resetting SQLite with sample data...');
+      // Clear SQLite tables completely
+      await db.execAsync('DELETE FROM communications');
+      await db.execAsync('DELETE FROM payments');
+      await db.execAsync('DELETE FROM kids');
+      await db.execAsync('DELETE FROM users');
+      await db.execAsync('DELETE FROM media_uploads');
+      console.log('✅ SQLite tables cleared');
+    }
+    
+    // Create admin and sample users
+    console.log('👤 Creating admin and sample users...');
+    await createDefaultAdmin();
+    await createSampleData();
+    console.log('✅ Reset with sample data complete');
+  } catch (error) {
+    console.error('❌ Error during sample data reset:', error);
+    throw error;
+  }
+};
+
+// Create comprehensive sample data
+const createSampleData = async () => {
+  console.log('📝 Creating comprehensive sample data...');
+  
+  try {
+    // Create sample parent users
+    const sampleUsers = [
+      {
+        email: 'john.smith@example.com',
+        password: '123456',
+        name: 'John Smith',
+        phone: '+1234567891',
+        role: 'parent' as const
+      },
+      {
+        email: 'sarah.johnson@example.com',
+        password: '123456',
+        name: 'Sarah Johnson',
+        phone: '+1234567892',
+        role: 'parent' as const
+      },
+      {
+        email: 'mike.davis@example.com',
+        password: '123456',
+        name: 'Mike Davis',
+        phone: '+1234567893',
+        role: 'parent' as const
+      },
+      {
+        email: 'lisa.wilson@example.com',
+        password: '123456',
+        name: 'Lisa Wilson',
+        phone: '+1234567894',
+        role: 'parent' as const
+      },
+      {
+        email: 'david.brown@example.com',
+        password: '123456',
+        name: 'David Brown',
+        phone: '+1234567895',
+        role: 'parent' as const
+      }
+    ];
+    
+    const createdUsers: User[] = [];
+    for (const userData of sampleUsers) {
+      const user = await createUser(userData);
+      createdUsers.push(user);
+      console.log(`✅ Sample user created: ${userData.email}`);
+    }
+    
+    // Create sample kids for each parent
+    const sampleKids = [
+      { parentIndex: 0, name: 'Emma Smith', age: 8, team: 'Lions', position: 'Forward' },
+      { parentIndex: 0, name: 'Jake Smith', age: 10, team: 'Tigers', position: 'Midfielder' },
+      { parentIndex: 1, name: 'Olivia Johnson', age: 9, team: 'Eagles', position: 'Defender' },
+      { parentIndex: 2, name: 'Liam Davis', age: 7, team: 'Lions', position: 'Goalkeeper' },
+      { parentIndex: 2, name: 'Sophia Davis', age: 11, team: 'Panthers', position: 'Forward' },
+      { parentIndex: 3, name: 'Noah Wilson', age: 8, team: 'Tigers', position: 'Midfielder' },
+      { parentIndex: 4, name: 'Ava Brown', age: 9, team: 'Eagles', position: 'Forward' },
+      { parentIndex: 4, name: 'Mason Brown', age: 6, team: 'Cubs', position: 'Defender' }
+    ];
+    
+    for (const kidData of sampleKids) {
+      const parent = createdUsers[kidData.parentIndex];
+      await createKid({
+        parentId: parent.id,
+        name: kidData.name,
+        age: kidData.age,
+        team: kidData.team,
+        position: kidData.position
+      });
+      console.log(`✅ Sample kid created: ${kidData.name}`);
+    }
+    
+    // Create sample payments
+    const samplePayments = [
+      { parentIndex: 0, amount: 150, description: 'Monthly Training Fee - March', status: 'paid' as const, dueDate: '2024-03-01', paidDate: '2024-02-28' },
+      { parentIndex: 0, amount: 150, description: 'Monthly Training Fee - April', status: 'pending' as const, dueDate: '2024-04-01' },
+      { parentIndex: 1, amount: 150, description: 'Monthly Training Fee - March', status: 'paid' as const, dueDate: '2024-03-01', paidDate: '2024-03-05' },
+      { parentIndex: 1, amount: 150, description: 'Monthly Training Fee - April', status: 'overdue' as const, dueDate: '2024-04-01' },
+      { parentIndex: 2, amount: 300, description: 'Tournament Registration Fee', status: 'paid' as const, dueDate: '2024-03-15', paidDate: '2024-03-10' },
+      { parentIndex: 2, amount: 150, description: 'Monthly Training Fee - April', status: 'pending' as const, dueDate: '2024-04-01' },
+      { parentIndex: 3, amount: 150, description: 'Monthly Training Fee - April', status: 'pending' as const, dueDate: '2024-04-01' },
+      { parentIndex: 4, amount: 75, description: 'Equipment Fee', status: 'paid' as const, dueDate: '2024-03-20', paidDate: '2024-03-18' }
+    ];
+    
+    for (const paymentData of samplePayments) {
+      const parent = createdUsers[paymentData.parentIndex];
+      await createPayment({
+        parentId: parent.id,
+        amount: paymentData.amount,
+        description: paymentData.description,
+        status: paymentData.status,
+        dueDate: paymentData.dueDate,
+        paidDate: paymentData.paidDate
+      });
+      console.log(`✅ Sample payment created: ${paymentData.description}`);
+    }
+    
+    // Create sample communications
+    const adminUser = await getUserByEmail('admin@example.com');
+    if (adminUser) {
+      const sampleCommunications = [
+        { message: 'Welcome to the new season! Training starts next Monday.', type: 'announcement' as const },
+        { message: 'Please remember to bring water bottles to all training sessions.', type: 'announcement' as const },
+        { message: 'Tournament schedule has been updated. Check the website for details.', type: 'announcement' as const },
+        { recipientIndex: 0, message: 'Great progress with Emma this week! Keep up the good work.', type: 'message' as const },
+        { recipientIndex: 1, message: 'Olivia showed excellent teamwork during practice.', type: 'message' as const }
+      ];
+      
+      for (const commData of sampleCommunications) {
+        const recipientId = 'recipientIndex' in commData && typeof commData.recipientIndex === 'number' 
+          ? createdUsers[commData.recipientIndex]?.id 
+          : undefined;
+          
+        await createCommunication({
+          senderId: adminUser.id,
+          recipientId,
+          message: commData.message,
+          type: commData.type,
+          isRead: false
+        });
+        console.log(`✅ Sample communication created: ${commData.message.substring(0, 30)}...`);
+      }
+    }
+    
+    console.log('✅ Sample data creation complete');
+  } catch (error) {
+    console.error('❌ Error creating sample data:', error);
     throw error;
   }
 };
