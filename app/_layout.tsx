@@ -29,7 +29,12 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   useEffect(() => {
-    SplashScreen.hideAsync();
+    // Delay splash screen hiding to ensure providers are ready
+    const timer = setTimeout(() => {
+      SplashScreen.hideAsync();
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const containerStyle = { flex: 1 };

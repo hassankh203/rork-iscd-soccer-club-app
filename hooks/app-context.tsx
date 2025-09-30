@@ -163,6 +163,12 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   const loadData = useCallback(async () => {
     if (!user) {
       console.log('No user found, skipping data load');
+      setKids([]);
+      setPayments([]);
+      setTrainingPolls([]);
+      setAnnouncements([]);
+      setMessages([]);
+      setMedia([]);
       return;
     }
     
@@ -277,9 +283,15 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   }, [user, initializeDemoData]);
 
   useEffect(() => {
-    if (user) {
-      loadData();
-    }
+    // Use setTimeout to make data loading non-blocking
+    // This prevents hydration timeout by allowing initial render to complete
+    const timeoutId = setTimeout(() => {
+      if (user) {
+        loadData();
+      }
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
   }, [user, loadData]);
 
   const calculateUnreadCounts = useCallback(() => {
