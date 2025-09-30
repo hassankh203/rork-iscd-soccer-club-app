@@ -8,13 +8,12 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  Dimensions,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useApp } from '@/hooks/app-context';
 import { Media } from '@/types';
-import { Upload, Camera, Link, Trash2, Download } from 'lucide-react-native';
+import { Upload, Camera, Link, Trash2, Download, ImagePlus } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 
 
 
@@ -23,39 +22,94 @@ export default function AdminPicOfWeek() {
   const [imageUrl, setImageUrl] = useState<string>('');
   const [caption, setCaption] = useState<string>('');
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const allMedia = media || [];
 
   console.log('🖼️ Admin Pic of Week - Media count:', allMedia.length);
   console.log('🖼️ Media items:', JSON.stringify(allMedia, null, 2));
 
+  const pickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Please allow access to your photo library to upload images.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImage(result.assets[0].uri);
+        setImageUrl('');
+      }
+    } catch (error) {
+      console.error('❌ Image picker error:', error);
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const takePhoto = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      
+      if (permissionResult.granted === false) {
+        Alert.alert('Permission Required', 'Please allow access to your camera to take photos.');
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setSelectedImage(result.assets[0].uri);
+        setImageUrl('');
+      }
+    } catch (error) {
+      console.error('❌ Camera error:', error);
+      Alert.alert('Error', 'Failed to take photo');
+    }
+  };
+
   const handleUpload = async () => {
-    if (!imageUrl.trim()) {
-      Alert.alert('Error', 'Please enter an image URL');
+    const imageSource = selectedImage || imageUrl.trim();
+    
+    if (!imageSource) {
+      Alert.alert('Error', 'Please select an image or enter an image URL');
       return;
     }
 
-    // Basic URL validation
-    const urlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i;
-    if (!urlPattern.test(imageUrl.trim())) {
-      Alert.alert('Error', 'Please enter a valid image URL (jpg, jpeg, png, gif, webp)');
-      return;
+    if (!selectedImage && imageUrl.trim()) {
+      const urlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i;
+      if (!urlPattern.test(imageUrl.trim())) {
+        Alert.alert('Error', 'Please enter a valid image URL (jpg, jpeg, png, gif, webp)');
+        return;
+      }
     }
 
     setIsUploading(true);
     try {
-      console.log('📤 Uploading media with URL:', imageUrl.trim());
+      console.log('📤 Uploading media:', imageSource);
       console.log('📝 Caption:', caption.trim() || 'No caption');
       
-      await uploadMedia(imageUrl.trim(), 'image', caption.trim() || undefined);
+      await uploadMedia(imageSource, 'image', caption.trim() || undefined);
       
       console.log('✅ Media uploaded successfully');
       console.log('📊 Current media count:', media?.length || 0);
       
       setImageUrl('');
       setCaption('');
+      setSelectedImage(null);
       
-      // Refresh data to ensure UI updates
       await refreshData();
       
       Alert.alert('Success', 'Picture uploaded successfully!');
@@ -164,18 +218,70 @@ export default function AdminPicOfWeek() {
             Upload New Picture
           </Text>
           
-          <View style={styles.inputContainer}>
-            <Link size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.urlInput}
-              placeholder="Enter image URL (https://...)"
-              value={imageUrl}
-              onChangeText={setImageUrl}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-            />
+          {/* Image Selection Buttons */}
+          <View style={styles.imageSelectionContainer}>
+            <TouchableOpacity 
+              style={styles.imagePickerButton}
+              onPress={pickImage}
+            >
+              <ImagePlus size={24} color="#1B5E20" />
+              <Text style={styles.imagePickerButtonText}>Choose from Gallery</Text>
+            </TouchableOpacity>
+            
+            {Platform.OS !== 'web' && (
+              <TouchableOpacity 
+                style={styles.imagePickerButton}
+                onPress={takePhoto}
+              >
+                <Camera size={24} color="#1B5E20" />
+                <Text style={styles.imagePickerButtonText}>Take Photo</Text>
+              </TouchableOpacity>
+            )}
           </View>
+
+          {/* Preview Selected Image */}
+          {selectedImage && (
+            <View style={styles.previewContainer}>
+              <Text style={styles.previewLabel}>Selected Image:</Text>
+              <Image 
+                source={{ uri: selectedImage }} 
+                style={styles.previewImage}
+                resizeMode="cover"
+              />
+              <TouchableOpacity 
+                style={styles.clearImageButton}
+                onPress={() => setSelectedImage(null)}
+              >
+                <Trash2 size={16} color="#fff" />
+                <Text style={styles.clearImageButtonText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* OR Divider */}
+          {!selectedImage && (
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>OR</Text>
+              <View style={styles.dividerLine} />
+            </View>
+          )}
+          
+          {/* URL Input */}
+          {!selectedImage && (
+            <View style={styles.inputContainer}>
+              <Link size={20} color="#666" style={styles.inputIcon} />
+              <TextInput
+                style={styles.urlInput}
+                placeholder="Enter image URL (https://...)"
+                value={imageUrl}
+                onChangeText={setImageUrl}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+            </View>
+          )}
 
           <TextInput
             style={styles.captionInput}
@@ -203,7 +309,10 @@ export default function AdminPicOfWeek() {
         <View style={styles.instructionsSection}>
           <Text style={styles.instructionsTitle}>Instructions</Text>
           <Text style={styles.instructionText}>
-            • Use high-quality images from trusted sources like Unsplash
+            • Choose images from your device gallery or take a new photo
+          </Text>
+          <Text style={styles.instructionText}>
+            • Alternatively, paste an image URL from trusted sources
           </Text>
           <Text style={styles.instructionText}>
             • Supported formats: JPG, JPEG, PNG, GIF, WebP
@@ -439,5 +548,79 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#e0e0e0',
     marginTop: 16,
+  },
+  imageSelectionContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  imagePickerButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#E8F5E8',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderWidth: 2,
+    borderColor: '#1B5E20',
+  },
+  imagePickerButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1B5E20',
+  },
+  previewContainer: {
+    marginBottom: 20,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#f8f9fa',
+    padding: 12,
+  },
+  previewLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1B5E20',
+    marginBottom: 8,
+  },
+  previewImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    marginBottom: 12,
+  },
+  clearImageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#ff3b30',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  clearImageButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#ddd',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#999',
   },
 });
