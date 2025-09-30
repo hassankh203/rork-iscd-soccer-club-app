@@ -8,11 +8,13 @@ import {
   TextInput,
   Alert,
   Modal,
-  Pressable
+  Pressable,
+  Platform
 } from "react-native";
 import { useApp } from "@/hooks/app-context";
 import { Bell, MessageSquare, Calendar, Send, Upload, Plus } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function AdminCommunicationScreen() {
   const { 
@@ -42,6 +44,8 @@ export default function AdminCommunicationScreen() {
   const [pollTitle, setPollTitle] = useState("");
   const [pollDate, setPollDate] = useState("");
   const [pollDescription, setPollDescription] = useState("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   
   const [announcementTitle, setAnnouncementTitle] = useState("");
   const [announcementContent, setAnnouncementContent] = useState("");
@@ -51,6 +55,18 @@ export default function AdminCommunicationScreen() {
   
   const [mediaUrl, setMediaUrl] = useState("");
   const [mediaCaption, setMediaCaption] = useState("");
+
+  const handleDateChange = (event: any, date?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    
+    if (date) {
+      setSelectedDate(date);
+      const formattedDate = date.toISOString().split('T')[0];
+      setPollDate(formattedDate);
+    }
+  };
 
   const handleCreatePoll = async () => {
     if (!pollTitle || !pollDate || !pollDescription) {
@@ -69,6 +85,7 @@ export default function AdminCommunicationScreen() {
     setPollTitle("");
     setPollDate("");
     setPollDescription("");
+    setSelectedDate(new Date());
   };
 
   const handleCreateAnnouncement = async () => {
@@ -130,6 +147,8 @@ export default function AdminCommunicationScreen() {
     setAnnouncementTitle("");
     setAnnouncementContent("");
     setMediaCaption("");
+    setShowDatePicker(false);
+    setSelectedDate(new Date());
   };
 
   // Calculate poll statistics
@@ -315,12 +334,36 @@ export default function AdminCommunicationScreen() {
                   value={pollTitle}
                   onChangeText={setPollTitle}
                 />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Date (e.g., 2024-01-15)"
-                  value={pollDate}
-                  onChangeText={setPollDate}
-                />
+                
+                <TouchableOpacity 
+                  style={styles.datePickerButton}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Calendar color="#1B5E20" size={20} />
+                  <Text style={styles.datePickerButtonText}>
+                    {pollDate || 'Select Date'}
+                  </Text>
+                </TouchableOpacity>
+                
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handleDateChange}
+                    minimumDate={new Date()}
+                  />
+                )}
+                
+                {Platform.OS === 'ios' && showDatePicker && (
+                  <TouchableOpacity 
+                    style={styles.datePickerDoneButton}
+                    onPress={() => setShowDatePicker(false)}
+                  >
+                    <Text style={styles.datePickerDoneText}>Done</Text>
+                  </TouchableOpacity>
+                )}
+                
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Description"
@@ -632,5 +675,30 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#FF0000',
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  datePickerButtonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  datePickerDoneButton: {
+    backgroundColor: '#1B5E20',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  datePickerDoneText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
