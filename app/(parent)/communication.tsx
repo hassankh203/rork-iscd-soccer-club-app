@@ -162,56 +162,80 @@ export default function CommunicationScreen() {
                   !poll.responses.some(r => r.kidId === kid.id)
                 );
                 
+                const pollDate = new Date(poll.date);
+                pollDate.setHours(23, 59, 59, 999);
+                const isExpired = pollDate < new Date();
+                
                 return (
-                  <View key={poll.id} style={styles.pollCard}>
+                  <View key={poll.id} style={[styles.pollCard, isExpired && styles.expiredPollCard]}>
                     <View style={styles.pollHeader}>
-                      <Text style={styles.pollTitle}>{poll.title}</Text>
-                      {hasUnresponded && <View style={styles.unreadDot} />}
+                      <View style={styles.pollTitleContainer}>
+                        <Text style={styles.pollTitle}>{poll.title}</Text>
+                        {isExpired && (
+                          <View style={styles.expiredBadge}>
+                            <Text style={styles.expiredBadgeText}>Expired</Text>
+                          </View>
+                        )}
+                      </View>
+                      {hasUnresponded && !isExpired && <View style={styles.unreadDot} />}
                     </View>
                     <Text style={styles.pollDate}>
-                      {new Date(poll.date).toLocaleDateString()}
+                      {new Date(poll.date).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
                     </Text>
                     <Text style={styles.pollDescription}>{poll.description}</Text>
                     
-                    <View style={styles.kidResponses}>
-                      {myKids.map(kid => {
-                        const response = poll.responses.find(r => r.kidId === kid.id);
-                        return (
-                          <View key={kid.id} style={styles.kidResponse}>
-                            <Text style={styles.kidName}>{kid.name}</Text>
-                            <View style={styles.responseButtons}>
-                              <TouchableOpacity
-                                style={[
-                                  styles.responseButton,
-                                  response?.attending === true && styles.activeYes
-                                ]}
-                                onPress={() => handlePollResponse(poll.id, kid.id, true)}
-                              >
-                                <Check color={response?.attending === true ? '#fff' : '#4CAF50'} size={16} />
-                                <Text style={[
-                                  styles.responseText,
-                                  response?.attending === true && styles.activeResponseText
-                                ]}>Yes</Text>
-                              </TouchableOpacity>
-                              
-                              <TouchableOpacity
-                                style={[
-                                  styles.responseButton,
-                                  response?.attending === false && styles.activeNo
-                                ]}
-                                onPress={() => handlePollResponse(poll.id, kid.id, false)}
-                              >
-                                <X color={response?.attending === false ? '#fff' : '#F44336'} size={16} />
-                                <Text style={[
-                                  styles.responseText,
-                                  response?.attending === false && styles.activeResponseText
-                                ]}>No</Text>
-                              </TouchableOpacity>
+                    {isExpired ? (
+                      <View style={styles.expiredMessage}>
+                        <Text style={styles.expiredMessageText}>
+                          This poll has expired and no longer accepts responses.
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.kidResponses}>
+                        {myKids.map(kid => {
+                          const response = poll.responses.find(r => r.kidId === kid.id);
+                          return (
+                            <View key={kid.id} style={styles.kidResponse}>
+                              <Text style={styles.kidName}>{kid.name}</Text>
+                              <View style={styles.responseButtons}>
+                                <TouchableOpacity
+                                  style={[
+                                    styles.responseButton,
+                                    response?.attending === true && styles.activeYes
+                                  ]}
+                                  onPress={() => handlePollResponse(poll.id, kid.id, true)}
+                                >
+                                  <Check color={response?.attending === true ? '#fff' : '#4CAF50'} size={16} />
+                                  <Text style={[
+                                    styles.responseText,
+                                    response?.attending === true && styles.activeResponseText
+                                  ]}>Yes</Text>
+                                </TouchableOpacity>
+                                
+                                <TouchableOpacity
+                                  style={[
+                                    styles.responseButton,
+                                    response?.attending === false && styles.activeNo
+                                  ]}
+                                  onPress={() => handlePollResponse(poll.id, kid.id, false)}
+                                >
+                                  <X color={response?.attending === false ? '#fff' : '#F44336'} size={16} />
+                                  <Text style={[
+                                    styles.responseText,
+                                    response?.attending === false && styles.activeResponseText
+                                  ]}>No</Text>
+                                </TouchableOpacity>
+                              </View>
                             </View>
-                          </View>
-                        );
-                      })}
-                    </View>
+                          );
+                        })}
+                      </View>
+                    )}
                   </View>
                 );
               })
@@ -457,14 +481,48 @@ const styles = StyleSheet.create({
   pollHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 8,
+  },
+  pollTitleContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
   },
   pollTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    flex: 1,
+  },
+  expiredPollCard: {
+    opacity: 0.7,
+    borderWidth: 1,
+    borderColor: '#F44336',
+  },
+  expiredBadge: {
+    backgroundColor: '#F44336',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  expiredBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  expiredMessage: {
+    backgroundColor: '#FFF3E0',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  expiredMessageText: {
+    fontSize: 13,
+    color: '#E65100',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   pollDate: {
     fontSize: 14,

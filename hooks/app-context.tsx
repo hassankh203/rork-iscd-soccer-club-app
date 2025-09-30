@@ -34,6 +34,8 @@ interface AppState {
   // Training polls
   createTrainingPoll: (poll: Omit<TrainingPoll, 'id' | 'createdAt' | 'responses'>) => Promise<void>;
   respondToPoll: (pollId: string, kidId: string, attending: boolean) => Promise<void>;
+  deletePoll: (pollId: string) => Promise<void>;
+  cleanupExpiredPolls: () => Promise<void>;
   // Announcements
   createAnnouncement: (title: string, content: string) => Promise<void>;
   markAnnouncementRead: (announcementId: string) => Promise<void>;
@@ -160,6 +162,31 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     console.log('Demo data initialized successfully');
   }, []);
 
+  const cleanupExpiredPolls = useCallback(async () => {
+    try {
+      console.log('🧹 Cleaning up expired polls...');
+      const now = new Date();
+      const activePollsData = await AsyncStorage.getItem('trainingPolls');
+      
+      if (!activePollsData) return;
+      
+      const allPolls = JSON.parse(activePollsData) as TrainingPoll[];
+      const activePolls = allPolls.filter(poll => {
+        const pollDate = new Date(poll.date);
+        pollDate.setHours(23, 59, 59, 999);
+        return pollDate >= now;
+      });
+      
+      if (activePolls.length !== allPolls.length) {
+        console.log(`🗑️ Removed ${allPolls.length - activePolls.length} expired polls`);
+        await AsyncStorage.setItem('trainingPolls', JSON.stringify(activePolls));
+        setTrainingPolls(activePolls);
+      }
+    } catch (error) {
+      console.error('Failed to cleanup expired polls:', error);
+    }
+  }, []);
+
   const loadData = useCallback(async () => {
     if (!user) {
       console.log('No user found, skipping data load');
@@ -246,7 +273,21 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       }
       
       const parsedPolls = safeJsonParse(pollsData, []);
-      setTrainingPolls(Array.isArray(parsedPolls) ? parsedPolls : []);
+      const validPolls = Array.isArray(parsedPolls) ? parsedPolls : [];
+      
+      const now = new Date();
+      const activePolls = validPolls.filter(poll => {
+        const pollDate = new Date(poll.date);
+        pollDate.setHours(23, 59, 59, 999);
+        return pollDate >= now;
+      });
+      
+      if (activePolls.length !== validPolls.length) {
+        console.log(`🗑️ Auto-removed ${validPolls.length - activePolls.length} expired polls during load`);
+        await AsyncStorage.setItem('trainingPolls', JSON.stringify(activePolls));
+      }
+      
+      setTrainingPolls(activePolls);
       
       const parsedAnnouncements = safeJsonParse(announcementsData, []);
       setAnnouncements(Array.isArray(parsedAnnouncements) ? parsedAnnouncements : []);
@@ -283,8 +324,6 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   }, [user, initializeDemoData]);
 
   useEffect(() => {
-    // Use setTimeout to make data loading non-blocking
-    // This prevents hydration timeout by allowing initial render to complete
     const timeoutId = setTimeout(() => {
       if (user) {
         loadData();
@@ -293,6 +332,16 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     
     return () => clearTimeout(timeoutId);
   }, [user, loadData]);
+
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      if (user) {
+        cleanupExpiredPolls();
+      }
+    }, 60000);
+    
+    return () => clearInterval(cleanupInterval);
+  }, [user, cleanupExpiredPolls]);
 
   const calculateUnreadCounts = useCallback(() => {
     if (!user) return { polls: 0, announcements: 0, messages: 0 };
@@ -621,12 +670,17 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
         throw new Error('Training poll not found');
       }
       
+      const pollDate = new Date(poll.date);
+      pollDate.setHours(23, 59, 59, 999);
+      if (pollDate < new Date()) {
+        throw new Error('This poll has expired and can no longer accept responses');
+      }
+      
       const kid = kids.find(k => k.id === kidId);
       if (!kid) {
         throw new Error('Child not found');
       }
       
-      // Check if user owns this kid
       if (user.role !== 'admin' && kid.parentId !== user.id) {
         throw new Error('You can only respond for your own children');
       }
@@ -660,6 +714,25 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       throw error;
     }
   }, [user, kids, trainingPolls]);
+
+  const deletePoll = useCallback(async (pollId: string) => {
+    if (!user || user.role !== 'admin') {
+      throw new Error('Only administrators can delete polls');
+    }
+    
+    try {
+      console.log('Deleting poll:', pollId);
+      
+      const updatedPolls = trainingPolls.filter(p => p.id !== pollId);
+      setTrainingPolls(updatedPolls);
+      await AsyncStorage.setItem('trainingPolls', JSON.stringify(updatedPolls));
+      
+      console.log('Poll deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete poll:', error);
+      throw error;
+    }
+  }, [user, trainingPolls]);
 
   const createAnnouncement = useCallback(async (title: string, content: string) => {
     if (!user || user.role !== 'admin') {
@@ -966,6 +1039,8 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     updateFeeStructure,
     createTrainingPoll,
     respondToPoll,
+    deletePoll,
+    cleanupExpiredPolls,
     createAnnouncement,
     markAnnouncementRead,
     sendMessage,

@@ -46,6 +46,7 @@ export interface TrainingPoll {
     kidId: string;
     attending: boolean;
   }[];
+  expiresAt?: string;
 }
 
 export interface Announcement {

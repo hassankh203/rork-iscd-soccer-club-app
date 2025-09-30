@@ -15,7 +15,7 @@ import {
 import { useApp } from "@/hooks/app-context";
 import { useLocalAuth } from "@/hooks/local-auth-context";
 import { useLocalData } from "@/hooks/local-data-context";
-import { Bell, MessageSquare, Calendar, Send, Upload, Plus, ChevronDown } from "lucide-react-native";
+import { Bell, MessageSquare, Calendar, Send, Upload, Plus, ChevronDown, Trash2 } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { User } from "@/lib/database";
@@ -33,7 +33,8 @@ export default function AdminCommunicationScreen() {
     announcements,
     kids,
     unreadCounts,
-    markCommunicationTabOpened
+    markCommunicationTabOpened,
+    deletePoll
   } = useApp();
   
   const [users, setUsers] = useState<User[]>([]);
@@ -192,6 +193,29 @@ export default function AdminCommunicationScreen() {
     return { yes, no, total: yes + no };
   };
 
+  const handleDeletePoll = (pollId: string, pollTitle: string) => {
+    Alert.alert(
+      'Delete Poll',
+      `Are you sure you want to delete "${pollTitle}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePoll(pollId);
+              Alert.alert('Success', 'Poll deleted successfully');
+            } catch (error) {
+              console.error('Failed to delete poll:', error);
+              Alert.alert('Error', 'Failed to delete poll');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.tabs}>
@@ -258,10 +282,35 @@ export default function AdminCommunicationScreen() {
             
             {trainingPolls.map(poll => {
               const stats = getPollStats(poll.id);
+              const pollDate = new Date(poll.date);
+              const isExpired = pollDate < new Date();
+              
               return (
                 <View key={poll.id} style={styles.pollCard}>
-                  <Text style={styles.pollTitle}>{poll.title}</Text>
-                  <Text style={styles.pollDate}>{poll.date}</Text>
+                  <View style={styles.pollHeader}>
+                    <View style={styles.pollHeaderLeft}>
+                      <Text style={styles.pollTitle}>{poll.title}</Text>
+                      {isExpired && (
+                        <View style={styles.expiredBadge}>
+                          <Text style={styles.expiredBadgeText}>Expired</Text>
+                        </View>
+                      )}
+                    </View>
+                    <TouchableOpacity
+                      style={styles.deletePollButton}
+                      onPress={() => handleDeletePoll(poll.id, poll.title)}
+                    >
+                      <Trash2 size={18} color="#F44336" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.pollDate}>
+                    {new Date(poll.date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </Text>
                   <Text style={styles.pollDescription}>{poll.description}</Text>
                   <View style={styles.pollStats}>
                     <Text style={styles.statText}>✓ Yes: {stats.yes}</Text>
@@ -606,11 +655,37 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
   },
+  pollHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  pollHeaderLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
   pollTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 8,
+  },
+  deletePollButton: {
+    padding: 4,
+  },
+  expiredBadge: {
+    backgroundColor: '#F44336',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  expiredBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
   },
   pollDate: {
     fontSize: 14,
