@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -14,12 +14,15 @@ import {
 } from "react-native";
 import { useApp } from "@/hooks/app-context";
 import { useLocalAuth } from "@/hooks/local-auth-context";
-import { Bell, MessageSquare, Calendar, Send, Upload, Plus } from "lucide-react-native";
+import { useLocalData } from "@/hooks/local-data-context";
+import { Bell, MessageSquare, Calendar, Send, Upload, Plus, ChevronDown } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { User } from "@/lib/database";
 
 export default function AdminCommunicationScreen() {
   const { user } = useLocalAuth();
+  const { getUsers } = useLocalData();
   const { 
     createTrainingPoll, 
     createAnnouncement, 
@@ -33,7 +36,24 @@ export default function AdminCommunicationScreen() {
     markCommunicationTabOpened
   } = useApp();
   
+  const [users, setUsers] = useState<User[]>([]);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  
   const [activeTab, setActiveTab] = useState<'polls' | 'announcements' | 'messages' | 'media'>('polls');
+  
+  useEffect(() => {
+    loadUsers();
+  }, []);
+  
+  const loadUsers = async () => {
+    try {
+      const allUsers = await getUsers();
+      const parentUsers = allUsers.filter(u => u.role === 'parent' && u.status === 'active');
+      setUsers(parentUsers);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+    }
+  };
   
   const handleTabChange = async (tab: 'polls' | 'announcements' | 'messages' | 'media') => {
     setActiveTab(tab);
@@ -60,6 +80,7 @@ export default function AdminCommunicationScreen() {
   
   const [messageContent, setMessageContent] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedUserName, setSelectedUserName] = useState("");
   
   const [mediaUrl, setMediaUrl] = useState("");
   const [mediaCaption, setMediaCaption] = useState("");
@@ -148,6 +169,7 @@ export default function AdminCommunicationScreen() {
   const closeModal = () => {
     setModalVisible(false);
     setSelectedUserId("");
+    setSelectedUserName("");
     setMessageContent("");
     setPollTitle("");
     setPollDate("");
@@ -157,6 +179,7 @@ export default function AdminCommunicationScreen() {
     setMediaCaption("");
     setShowDatePicker(false);
     setSelectedDate(new Date());
+    setShowUserDropdown(false);
   };
 
   // Calculate poll statistics
@@ -312,6 +335,8 @@ export default function AdminCommunicationScreen() {
                       style={styles.replyButton}
                       onPress={() => {
                         setSelectedUserId(message.fromUserId);
+                        const replyUser = users.find(u => u.id === message.fromUserId);
+                        setSelectedUserName(replyUser?.name || message.fromUserId);
                         openModal('message');
                       }}
                     >
@@ -440,17 +465,48 @@ export default function AdminCommunicationScreen() {
                 <Text style={styles.modalTitle}>
                   {selectedUserId ? 'Reply to User' : 'Send New Message'}
                 </Text>
-                {!selectedUserId && (
-                  <TextInput
-                    style={styles.input}
-                    placeholder="User ID (e.g., demo-parent)"
-                    value={selectedUserId}
-                    onChangeText={setSelectedUserId}
-                  />
-                )}
-                {selectedUserId && (
+                {!selectedUserId ? (
+                  <View>
+                    <TouchableOpacity
+                      style={styles.dropdownButton}
+                      onPress={() => setShowUserDropdown(!showUserDropdown)}
+                    >
+                      <Text style={styles.dropdownButtonText}>
+                        {selectedUserName || 'Select a user'}
+                      </Text>
+                      <ChevronDown color="#666" size={20} />
+                    </TouchableOpacity>
+                    
+                    {showUserDropdown && (
+                      <View style={styles.dropdownList}>
+                        <ScrollView style={styles.dropdownScrollView} nestedScrollEnabled>
+                          {users.length > 0 ? (
+                            users.map((u) => (
+                              <TouchableOpacity
+                                key={u.id}
+                                style={styles.dropdownItem}
+                                onPress={() => {
+                                  setSelectedUserId(u.id);
+                                  setSelectedUserName(u.name);
+                                  setShowUserDropdown(false);
+                                }}
+                              >
+                                <Text style={styles.dropdownItemName}>{u.name}</Text>
+                                <Text style={styles.dropdownItemEmail}>{u.email}</Text>
+                              </TouchableOpacity>
+                            ))
+                          ) : (
+                            <View style={styles.dropdownItem}>
+                              <Text style={styles.dropdownItemEmail}>No users available</Text>
+                            </View>
+                          )}
+                        </ScrollView>
+                      </View>
+                    )}
+                  </View>
+                ) : (
                   <View style={styles.recipientInfo}>
-                    <Text style={styles.recipientLabel}>To: {selectedUserId}</Text>
+                    <Text style={styles.recipientLabel}>To: {selectedUserName}</Text>
                   </View>
                 )}
                 <TextInput
@@ -768,5 +824,51 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#1B5E20',
     fontWeight: '500',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  dropdownList: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    marginBottom: 16,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dropdownScrollView: {
+    maxHeight: 200,
+  },
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  dropdownItemName: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  dropdownItemEmail: {
+    fontSize: 14,
+    color: '#666',
   },
 });
