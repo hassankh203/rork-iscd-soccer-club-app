@@ -118,7 +118,6 @@ const styles = StyleSheet.create({
   },
   focusedIconContainer: {
     backgroundColor: 'rgba(212, 175, 55, 0.2)',
-    transform: [{ scale: 1.05 }],
   },
   badge: {
     position: 'absolute',
