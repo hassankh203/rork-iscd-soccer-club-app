@@ -186,12 +186,21 @@ export default function SignInScreen() {
               
               <Text style={styles.demoNote}>💡 You can also create new accounts using Sign Up</Text>
               
-              <TouchableOpacity
-                style={styles.testDataButton}
-                onPress={() => router.push('/add-test-data')}
-              >
-                <Text style={styles.testDataButtonText}>🚀 Add Test Data & View All Credentials</Text>
-              </TouchableOpacity>
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.testDataButton, styles.halfButton]}
+                  onPress={() => router.push('/add-test-data')}
+                >
+                  <Text style={styles.testDataButtonText}>🚀 Add Test Data</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.testDataButton, styles.halfButton]}
+                  onPress={() => router.push('/view-data')}
+                >
+                  <Text style={styles.testDataButtonText}>📊 View Database</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <TouchableOpacity
@@ -425,5 +434,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  halfButton: {
+    flex: 1,
   },
 });

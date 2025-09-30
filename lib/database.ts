@@ -660,13 +660,17 @@ export const updateUser = async (id: string, updates: Partial<Omit<User, 'id' | 
 
 export const authenticateUser = async (email: string, password: string): Promise<User | null> => {
   console.log('🔐 Authenticating user:', email);
+  console.log('🔑 Password provided:', password);
+  
   const user = await getUserByEmail(email);
   if (!user) {
     console.log('❌ User not found:', email);
+    console.log('💡 Tip: Make sure the user exists in the database');
     return null;
   }
   
   console.log('👤 User found:', user.email, 'Status:', user.status);
+  console.log('🔑 Stored password hash:', user.password);
   
   // Check if user is active
   if (user.status === 'inactive') {
@@ -675,9 +679,13 @@ export const authenticateUser = async (email: string, password: string): Promise
   }
   
   const hashedPassword = hashPassword(password);
+  console.log('🔑 Computed password hash:', hashedPassword);
   console.log('🔑 Comparing passwords...');
+  
   if (user.password !== hashedPassword) {
     console.log('❌ Password mismatch for:', email);
+    console.log('❌ Expected:', user.password);
+    console.log('❌ Got:', hashedPassword);
     return null;
   }
   
