@@ -24,6 +24,7 @@ export default function AdminCommunicationScreen() {
     messages,
     uploadMedia,
     trainingPolls,
+    announcements,
     kids,
     unreadCounts,
     markCommunicationTabOpened
@@ -35,6 +36,8 @@ export default function AdminCommunicationScreen() {
     setActiveTab(tab);
     if (tab === 'messages') {
       await markCommunicationTabOpened('messages');
+    } else if (tab === 'announcements') {
+      await markCommunicationTabOpened('announcements');
     }
   };
   const [modalVisible, setModalVisible] = useState(false);
@@ -252,6 +255,24 @@ export default function AdminCommunicationScreen() {
               <Plus color="#fff" size={20} />
               <Text style={styles.createButtonText}>Create Announcement</Text>
             </TouchableOpacity>
+            
+            <Text style={styles.sectionTitle}>All Announcements</Text>
+            {announcements.length > 0 ? (
+              announcements.map(announcement => (
+                <View key={announcement.id} style={styles.announcementCard}>
+                  <Text style={styles.announcementTitle}>{announcement.title}</Text>
+                  <Text style={styles.announcementContent}>{announcement.content}</Text>
+                  <Text style={styles.announcementDate}>
+                    {new Date(announcement.createdAt).toLocaleString()}
+                  </Text>
+                  <Text style={styles.announcementReadCount}>
+                    Read by: {announcement.readBy.length} users
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No announcements yet</Text>
+            )}
           </View>
         )}
 
@@ -700,5 +721,33 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  announcementCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  announcementTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  announcementContent: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  announcementDate: {
+    fontSize: 12,
+    color: '#999',
+    marginBottom: 4,
+  },
+  announcementReadCount: {
+    fontSize: 12,
+    color: '#1B5E20',
+    fontWeight: '500',
   },
 });
