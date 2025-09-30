@@ -9,7 +9,8 @@ import {
   Alert,
   Modal,
   Pressable,
-  Platform
+  Platform,
+  KeyboardAvoidingView
 } from "react-native";
 import { useApp } from "@/hooks/app-context";
 import { Bell, MessageSquare, Calendar, Send, Upload, Plus } from "lucide-react-native";
@@ -341,11 +342,19 @@ export default function AdminCommunicationScreen() {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
       >
-        <Pressable 
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
-          onPress={closeModal}
         >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <Pressable 
+            style={styles.modalOverlay}
+            onPress={closeModal}
+          >
+            <ScrollView 
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
             {modalType === 'poll' && (
               <>
                 <Text style={styles.modalTitle}>Create Training Poll</Text>
@@ -472,8 +481,10 @@ export default function AdminCommunicationScreen() {
                 </TouchableOpacity>
               </>
             )}
-          </View>
-        </Pressable>
+              </View>
+            </ScrollView>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -587,8 +598,12 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 20,
   },
   modalContent: {
     backgroundColor: '#fff',

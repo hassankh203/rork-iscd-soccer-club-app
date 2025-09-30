@@ -8,7 +8,9 @@ import {
   TextInput,
   Alert,
   Modal,
-  Pressable
+  Pressable,
+  KeyboardAvoidingView,
+  Platform
 } from "react-native";
 import { useAuth } from "@/hooks/auth-context";
 import { useApp } from "@/hooks/app-context";
@@ -294,51 +296,61 @@ export default function CommunicationScreen() {
         visible={replyModalVisible}
         onRequestClose={() => setReplyModalVisible(false)}
       >
-        <Pressable 
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
-          onPress={() => setReplyModalVisible(false)}
         >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-            <Text style={styles.modalTitle}>Reply to Admin</Text>
-            
-            {selectedMessage && (
-              <View style={styles.originalMessage}>
-                <Text style={styles.originalLabel}>Original Message:</Text>
-                <Text style={styles.originalContent}>{selectedMessage.content}</Text>
+          <Pressable 
+            style={styles.modalOverlay}
+            onPress={() => setReplyModalVisible(false)}
+          >
+            <ScrollView 
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+                <Text style={styles.modalTitle}>Reply to Admin</Text>
+                
+                {selectedMessage && (
+                  <View style={styles.originalMessage}>
+                    <Text style={styles.originalLabel}>Original Message:</Text>
+                    <Text style={styles.originalContent}>{selectedMessage.content}</Text>
+                  </View>
+                )}
+                
+                <TextInput
+                  style={styles.replyInput}
+                  placeholder="Type your reply..."
+                  value={replyContent}
+                  onChangeText={setReplyContent}
+                  multiline
+                  numberOfLines={4}
+                />
+                
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => {
+                      setReplyModalVisible(false);
+                      setReplyContent("");
+                      setSelectedMessage(null);
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.sendButton]}
+                    onPress={handleReplyMessage}
+                  >
+                    <Send color="#fff" size={18} />
+                    <Text style={styles.sendButtonText}>Send</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            )}
-            
-            <TextInput
-              style={styles.replyInput}
-              placeholder="Type your reply..."
-              value={replyContent}
-              onChangeText={setReplyContent}
-              multiline
-              numberOfLines={4}
-            />
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setReplyModalVisible(false);
-                  setReplyContent("");
-                  setSelectedMessage(null);
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.modalButton, styles.sendButton]}
-                onPress={handleReplyMessage}
-              >
-                <Send color="#fff" size={18} />
-                <Text style={styles.sendButtonText}>Send</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Pressable>
+            </ScrollView>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal
@@ -347,43 +359,53 @@ export default function CommunicationScreen() {
         visible={newMessageModalVisible}
         onRequestClose={() => setNewMessageModalVisible(false)}
       >
-        <Pressable 
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalOverlay}
-          onPress={() => setNewMessageModalVisible(false)}
         >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-            <Text style={styles.modalTitle}>Send Message to Admin</Text>
-            
-            <TextInput
-              style={styles.replyInput}
-              placeholder="Type your message..."
-              value={newMessageContent}
-              onChangeText={setNewMessageContent}
-              multiline
-              numberOfLines={4}
-            />
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => {
-                  setNewMessageModalVisible(false);
-                  setNewMessageContent("");
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.modalButton, styles.sendButton]}
-                onPress={handleSendNewMessage}
-              >
-                <Send color="#fff" size={18} />
-                <Text style={styles.sendButtonText}>Send</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Pressable>
+          <Pressable 
+            style={styles.modalOverlay}
+            onPress={() => setNewMessageModalVisible(false)}
+          >
+            <ScrollView 
+              contentContainerStyle={styles.modalScrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+                <Text style={styles.modalTitle}>Send Message to Admin</Text>
+                
+                <TextInput
+                  style={styles.replyInput}
+                  placeholder="Type your message..."
+                  value={newMessageContent}
+                  onChangeText={setNewMessageContent}
+                  multiline
+                  numberOfLines={4}
+                />
+                
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => {
+                      setNewMessageModalVisible(false);
+                      setNewMessageContent("");
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.sendButton]}
+                    onPress={handleSendNewMessage}
+                  >
+                    <Send color="#fff" size={18} />
+                    <Text style={styles.sendButtonText}>Send</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </ScrollView>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -566,8 +588,12 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 20,
   },
   modalContent: {
     backgroundColor: '#fff',
