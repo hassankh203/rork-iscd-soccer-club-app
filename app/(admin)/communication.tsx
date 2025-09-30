@@ -23,6 +23,7 @@ export default function AdminCommunicationScreen() {
     uploadMedia,
     trainingPolls,
     kids,
+    openedTabs,
     markCommunicationTabOpened
   } = useApp();
   
@@ -148,7 +149,10 @@ export default function AdminCommunicationScreen() {
           style={[styles.tab, activeTab === 'polls' && styles.activeTab]}
           onPress={() => handleTabChange('polls')}
         >
-          <Calendar color={activeTab === 'polls' ? '#D4AF37' : '#fff'} size={20} />
+          <View style={styles.tabIconContainer}>
+            <Calendar color={activeTab === 'polls' ? '#D4AF37' : '#fff'} size={20} />
+            {!openedTabs.polls && <View style={styles.tabUnreadDot} />}
+          </View>
           <Text style={[styles.tabText, activeTab === 'polls' && styles.activeTabText]}>
             Polls
           </Text>
@@ -158,7 +162,10 @@ export default function AdminCommunicationScreen() {
           style={[styles.tab, activeTab === 'announcements' && styles.activeTab]}
           onPress={() => handleTabChange('announcements')}
         >
-          <Bell color={activeTab === 'announcements' ? '#D4AF37' : '#fff'} size={20} />
+          <View style={styles.tabIconContainer}>
+            <Bell color={activeTab === 'announcements' ? '#D4AF37' : '#fff'} size={20} />
+            {!openedTabs.announcements && <View style={styles.tabUnreadDot} />}
+          </View>
           <Text style={[styles.tabText, activeTab === 'announcements' && styles.activeTabText]}>
             Announce
           </Text>
@@ -168,7 +175,10 @@ export default function AdminCommunicationScreen() {
           style={[styles.tab, activeTab === 'messages' && styles.activeTab]}
           onPress={() => handleTabChange('messages')}
         >
-          <MessageSquare color={activeTab === 'messages' ? '#D4AF37' : '#fff'} size={20} />
+          <View style={styles.tabIconContainer}>
+            <MessageSquare color={activeTab === 'messages' ? '#D4AF37' : '#fff'} size={20} />
+            {!openedTabs.messages && <View style={styles.tabUnreadDot} />}
+          </View>
           <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
             Messages
           </Text>
@@ -610,5 +620,17 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     padding: 40,
+  },
+  tabIconContainer: {
+    position: 'relative',
+  },
+  tabUnreadDot: {
+    position: 'absolute',
+    top: -2,
+    right: -6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF0000',
   },
 });

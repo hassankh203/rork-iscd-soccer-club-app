@@ -17,6 +17,11 @@ interface AppState {
     announcements: number;
     messages: number;
   };
+  openedTabs: {
+    polls: boolean;
+    announcements: boolean;
+    messages: boolean;
+  };
   // Kid management
   addKid: (name: string, yearOfBirth: number) => Promise<void>;
   updateKid: (kidId: string, updates: Partial<Kid>) => Promise<void>;
@@ -61,6 +66,11 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [media, setMedia] = useState<Media[]>([]);
+  const [openedTabs, setOpenedTabs] = useState<{ polls: boolean; announcements: boolean; messages: boolean }>({
+    polls: false,
+    announcements: false,
+    messages: false
+  });
 
   const initializeDemoData = useCallback(async () => {
     console.log('Initializing demo data...');
@@ -183,7 +193,7 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
         await AsyncStorage.setItem('media', JSON.stringify(demoMedia));
       }
       
-      const [kidsData, paymentsData, feesData, pollsData, announcementsData, messagesData, mediaData, sharedMediaData] = await Promise.all([
+      const [kidsData, paymentsData, feesData, pollsData, announcementsData, messagesData, mediaData, sharedMediaData, openedTabsData] = await Promise.all([
         AsyncStorage.getItem('kids'),
         AsyncStorage.getItem('payments'),
         AsyncStorage.getItem('feeStructure'),
@@ -191,7 +201,8 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
         AsyncStorage.getItem('announcements'),
         AsyncStorage.getItem('messages'),
         AsyncStorage.getItem('media'),
-        AsyncStorage.getItem('sharedMedia')
+        AsyncStorage.getItem('sharedMedia'),
+        AsyncStorage.getItem(`openedTabs_${user.id}`)
       ]);
 
       // Helper function to safely parse JSON
@@ -241,6 +252,16 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
       const mediaToUse = sharedMediaData || mediaData;
       const parsedMedia = safeJsonParse(mediaToUse, []);
       setMedia(Array.isArray(parsedMedia) ? parsedMedia : []);
+      
+      // Load opened tabs state
+      const parsedOpenedTabs = safeJsonParse(openedTabsData, null);
+      if (parsedOpenedTabs && typeof parsedOpenedTabs === 'object') {
+        setOpenedTabs({
+          polls: parsedOpenedTabs.polls || false,
+          announcements: parsedOpenedTabs.announcements || false,
+          messages: parsedOpenedTabs.messages || false
+        });
+      }
       
       console.log('App data loaded successfully');
     } catch (error) {
@@ -850,6 +871,13 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     try {
       console.log('Marking communication tab as opened:', tabType);
       
+      // Mark tab as opened (first time visit)
+      if (!openedTabs[tabType]) {
+        const updatedOpenedTabs = { ...openedTabs, [tabType]: true };
+        setOpenedTabs(updatedOpenedTabs);
+        await AsyncStorage.setItem(`openedTabs_${user.id}`, JSON.stringify(updatedOpenedTabs));
+      }
+      
       if (tabType === 'announcements') {
         // Mark all unread announcements as read
         const unreadAnnouncements = announcements.filter(a => !a.readBy.includes(user.id));
@@ -875,7 +903,7 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     } catch (error) {
       console.error('Failed to mark communication tab as opened:', error);
     }
-  }, [user, announcements, messages]);
+  }, [user, announcements, messages, openedTabs]);
   
   const refreshData = useCallback(async () => {
     await loadData();
@@ -923,6 +951,7 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     messages,
     media,
     unreadCounts: memoizedUnreadCounts,
+    openedTabs,
     addKid,
     updateKid,
     deleteKid,
