@@ -21,7 +21,7 @@ export default function CommunicationScreen() {
     trainingPolls, 
     announcements, 
     messages,
-    openedTabs,
+    unreadCounts,
     respondToPoll,
     markAnnouncementRead,
     sendMessage,
@@ -114,7 +114,7 @@ export default function CommunicationScreen() {
         >
           <View style={styles.tabIconContainer}>
             <Calendar color={activeTab === 'polls' ? '#1B5E20' : '#666'} size={20} />
-            {!openedTabs.polls && <View style={styles.tabUnreadDot} />}
+            {unreadCounts.polls > 0 && <View style={styles.tabUnreadDot} />}
           </View>
           <Text style={[styles.tabText, activeTab === 'polls' && styles.activeTabText]}>
             Training
@@ -127,7 +127,7 @@ export default function CommunicationScreen() {
         >
           <View style={styles.tabIconContainer}>
             <Bell color={activeTab === 'announcements' ? '#1B5E20' : '#666'} size={20} />
-            {!openedTabs.announcements && <View style={styles.tabUnreadDot} />}
+            {unreadCounts.announcements > 0 && <View style={styles.tabUnreadDot} />}
           </View>
           <Text style={[styles.tabText, activeTab === 'announcements' && styles.activeTabText]}>
             Announcements
@@ -140,7 +140,7 @@ export default function CommunicationScreen() {
         >
           <View style={styles.tabIconContainer}>
             <MessageSquare color={activeTab === 'messages' ? '#1B5E20' : '#666'} size={20} />
-            {!openedTabs.messages && <View style={styles.tabUnreadDot} />}
+            {unreadCounts.messages > 0 && <View style={styles.tabUnreadDot} />}
           </View>
           <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
             Messages

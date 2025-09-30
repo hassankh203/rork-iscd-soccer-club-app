@@ -23,7 +23,7 @@ export default function AdminCommunicationScreen() {
     uploadMedia,
     trainingPolls,
     kids,
-    openedTabs,
+    unreadCounts,
     markCommunicationTabOpened
   } = useApp();
   
@@ -151,7 +151,7 @@ export default function AdminCommunicationScreen() {
         >
           <View style={styles.tabIconContainer}>
             <Calendar color={activeTab === 'polls' ? '#D4AF37' : '#fff'} size={20} />
-            {!openedTabs.polls && <View style={styles.tabUnreadDot} />}
+            {unreadCounts.polls > 0 && <View style={styles.tabUnreadDot} />}
           </View>
           <Text style={[styles.tabText, activeTab === 'polls' && styles.activeTabText]}>
             Polls
@@ -164,7 +164,7 @@ export default function AdminCommunicationScreen() {
         >
           <View style={styles.tabIconContainer}>
             <Bell color={activeTab === 'announcements' ? '#D4AF37' : '#fff'} size={20} />
-            {!openedTabs.announcements && <View style={styles.tabUnreadDot} />}
+            {unreadCounts.announcements > 0 && <View style={styles.tabUnreadDot} />}
           </View>
           <Text style={[styles.tabText, activeTab === 'announcements' && styles.activeTabText]}>
             Announce
@@ -177,7 +177,7 @@ export default function AdminCommunicationScreen() {
         >
           <View style={styles.tabIconContainer}>
             <MessageSquare color={activeTab === 'messages' ? '#D4AF37' : '#fff'} size={20} />
-            {!openedTabs.messages && <View style={styles.tabUnreadDot} />}
+            {unreadCounts.messages > 0 && <View style={styles.tabUnreadDot} />}
           </View>
           <Text style={[styles.tabText, activeTab === 'messages' && styles.activeTabText]}>
             Messages
