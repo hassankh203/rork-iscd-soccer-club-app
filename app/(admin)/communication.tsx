@@ -13,11 +13,13 @@ import {
   KeyboardAvoidingView
 } from "react-native";
 import { useApp } from "@/hooks/app-context";
+import { useLocalAuth } from "@/hooks/local-auth-context";
 import { Bell, MessageSquare, Calendar, Send, Upload, Plus } from "lucide-react-native";
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 export default function AdminCommunicationScreen() {
+  const { user } = useLocalAuth();
   const { 
     createTrainingPoll, 
     createAnnouncement, 
@@ -39,6 +41,8 @@ export default function AdminCommunicationScreen() {
       await markCommunicationTabOpened('messages');
     } else if (tab === 'announcements') {
       await markCommunicationTabOpened('announcements');
+    } else if (tab === 'polls') {
+      await markCommunicationTabOpened('polls');
     }
   };
   const [modalVisible, setModalVisible] = useState(false);
@@ -295,7 +299,7 @@ export default function AdminCommunicationScreen() {
                     <Text style={styles.messageFrom}>
                       {message.fromUserId === 'admin' ? 'You → User' : 'User → You'}
                     </Text>
-                    {!message.read && message.toUserId === 'admin' && (
+                    {!message.read && message.toUserId === user?.id && (
                       <View style={styles.unreadDot} />
                     )}
                   </View>
