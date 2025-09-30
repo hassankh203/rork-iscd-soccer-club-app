@@ -17,17 +17,22 @@ export default function ParentPicOfWeek() {
   const insets = useSafeAreaInsets();
   const allMedia = media || [];
 
+  console.log('🖼️ Parent Pic of Week - Media count:', allMedia.length);
+  console.log('🖼️ Media items:', JSON.stringify(allMedia, null, 2));
+
   const onRefresh = React.useCallback(async () => {
     try {
+      console.log('🔄 Refreshing media data...');
       await refreshData();
-      console.log('Media refreshed successfully');
+      console.log('✅ Media refreshed successfully. Count:', media?.length || 0);
     } catch (error) {
-      console.error('Failed to refresh media:', error);
+      console.error('❌ Failed to refresh media:', error);
     }
-  }, [refreshData]);
+  }, [refreshData, media]);
 
   // Auto-refresh when component mounts to ensure latest media is loaded
   useEffect(() => {
+    console.log('🔄 Component mounted, refreshing data...');
     refreshData();
   }, [refreshData]);
 

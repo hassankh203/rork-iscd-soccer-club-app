@@ -19,12 +19,15 @@ import { Upload, Camera, Link, Trash2, Download } from 'lucide-react-native';
 
 
 export default function AdminPicOfWeek() {
-  const { media, uploadMedia, removeMedia } = useApp();
+  const { media, uploadMedia, removeMedia, refreshData } = useApp();
   const [imageUrl, setImageUrl] = useState<string>('');
   const [caption, setCaption] = useState<string>('');
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
   const allMedia = media || [];
+
+  console.log('🖼️ Admin Pic of Week - Media count:', allMedia.length);
+  console.log('🖼️ Media items:', JSON.stringify(allMedia, null, 2));
 
   const handleUpload = async () => {
     if (!imageUrl.trim()) {
@@ -41,12 +44,23 @@ export default function AdminPicOfWeek() {
 
     setIsUploading(true);
     try {
+      console.log('📤 Uploading media with URL:', imageUrl.trim());
+      console.log('📝 Caption:', caption.trim() || 'No caption');
+      
       await uploadMedia(imageUrl.trim(), 'image', caption.trim() || undefined);
+      
+      console.log('✅ Media uploaded successfully');
+      console.log('📊 Current media count:', media?.length || 0);
+      
       setImageUrl('');
       setCaption('');
+      
+      // Refresh data to ensure UI updates
+      await refreshData();
+      
       Alert.alert('Success', 'Picture uploaded successfully!');
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('❌ Upload error:', error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to upload picture');
     } finally {
       setIsUploading(false);
