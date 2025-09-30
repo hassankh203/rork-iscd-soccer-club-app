@@ -883,15 +883,11 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
     try {
       console.log('Marking communication tab as opened:', tabType);
       
-      // Mark tab as opened (first time visit)
-      if (!openedTabs[tabType]) {
-        const updatedOpenedTabs = { ...openedTabs, [tabType]: true };
-        setOpenedTabs(updatedOpenedTabs);
-        await AsyncStorage.setItem(`openedTabs_${user.id}`, JSON.stringify(updatedOpenedTabs));
-      }
+      const updatedOpenedTabs = { ...openedTabs, [tabType]: true };
+      setOpenedTabs(updatedOpenedTabs);
+      await AsyncStorage.setItem(`openedTabs_${user.id}`, JSON.stringify(updatedOpenedTabs));
       
       if (tabType === 'announcements') {
-        // Mark all unread announcements as read
         const unreadAnnouncements = announcements.filter(a => !a.readBy.includes(user.id));
         if (unreadAnnouncements.length > 0) {
           const updatedAnnouncements = announcements.map(a => 
@@ -901,7 +897,6 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
           await AsyncStorage.setItem('announcements', JSON.stringify(updatedAnnouncements));
         }
       } else if (tabType === 'messages') {
-        // Mark all unread messages TO this user as read
         const unreadMessages = messages.filter(m => m.toUserId === user.id && !m.read);
         if (unreadMessages.length > 0) {
           const updatedMessages = messages.map(m => 
@@ -911,7 +906,6 @@ export const [AppProvider, useApp] = createContextHook<AppState>(() => {
           await AsyncStorage.setItem('messages', JSON.stringify(updatedMessages));
         }
       }
-      // Note: polls don't auto-mark as read since they require user action
     } catch (error) {
       console.error('Failed to mark communication tab as opened:', error);
     }
