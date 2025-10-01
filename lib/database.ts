@@ -785,6 +785,42 @@ export const getAllKids = async (): Promise<Kid[]> => {
   }));
 };
 
+export const updateKid = async (kidId: string, updates: Partial<Omit<Kid, 'id' | 'parentId' | 'createdAt'>>): Promise<void> => {
+  const now = new Date().toISOString();
+  
+  if (Platform.OS === 'web') {
+    const kids = await getStoredKids();
+    const kidIndex = kids.findIndex(k => k.id === kidId);
+    if (kidIndex === -1) throw new Error('Kid not found');
+    
+    kids[kidIndex] = { ...kids[kidIndex], ...updates };
+    await AsyncStorage.setItem('kids', JSON.stringify(kids));
+    return;
+  }
+  
+  const fields = Object.keys(updates).map(key => {
+    const dbKey = key === 'parentId' ? 'parent_id' : key;
+    return `${dbKey} = ?`;
+  }).join(', ');
+  const values = [...Object.values(updates), now, kidId];
+  
+  await db.runAsync(
+    `UPDATE kids SET ${fields}, updated_at = ? WHERE id = ?`,
+    values
+  );
+};
+
+export const deleteKid = async (kidId: string): Promise<void> => {
+  if (Platform.OS === 'web') {
+    const kids = await getStoredKids();
+    const filteredKids = kids.filter(k => k.id !== kidId);
+    await AsyncStorage.setItem('kids', JSON.stringify(filteredKids));
+    return;
+  }
+  
+  await db.runAsync('DELETE FROM kids WHERE id = ?', [kidId]);
+};
+
 const getStoredKids = async (): Promise<Kid[]> => {
   try {
     const stored = await AsyncStorage.getItem('kids');

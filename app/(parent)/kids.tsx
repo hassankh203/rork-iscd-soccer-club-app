@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,50 +10,88 @@ import {
   Modal,
   Pressable
 } from "react-native";
-import { useAuth } from "@/hooks/auth-context";
-import { useApp } from "@/hooks/app-context";
+import { useLocalAuth } from "@/hooks/local-auth-context";
+import { useLocalData } from "@/hooks/local-data-context";
 import { Plus, Users, Calendar, Edit2, Trash2 } from "lucide-react-native";
 
 export default function KidsScreen() {
-  const { user } = useAuth();
-  const { kids, addKid, updateKid, deleteKid, getTeamRoster } = useApp();
+  const { user } = useLocalAuth();
+  const { getKids } = useLocalData();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingKid, setEditingKid] = useState<string | null>(null);
   const [kidName, setKidName] = useState("");
-  const [yearOfBirth, setYearOfBirth] = useState("");
+  const [age, setAge] = useState("");
+  const [team, setTeam] = useState("");
+  const [position, setPosition] = useState("");
+  const [kids, setKids] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadKids = async () => {
+    try {
+      setLoading(true);
+      const kidsData = await getKids();
+      setKids(kidsData);
+    } catch (error) {
+      console.error('Failed to load kids:', error);
+      Alert.alert('Error', 'Failed to load kids');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadKids();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const myKids = kids.filter(k => k.parentId === user?.id);
-  const teamARoster = getTeamRoster('A');
-  const teamBRoster = getTeamRoster('B');
+  const teamARoster = kids.filter(k => k.team === 'A' || k.team === 'Tigers' || k.team === 'Eagles' || k.team === 'Panthers');
+  const teamBRoster = kids.filter(k => k.team === 'B' || k.team === 'Lions' || k.team === 'Cubs');
 
   const handleAddKid = async () => {
-    if (!kidName || !yearOfBirth) {
+    if (!kidName || !age) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
-    const year = parseInt(yearOfBirth);
-    if (isNaN(year) || year < 1990 || year > new Date().getFullYear()) {
-      Alert.alert("Error", "Please enter a valid year of birth");
+    const ageNum = parseInt(age);
+    if (isNaN(ageNum) || ageNum < 4 || ageNum > 18) {
+      Alert.alert("Error", "Please enter a valid age (4-18)");
       return;
     }
 
-    if (editingKid) {
-      await updateKid(editingKid, { name: kidName, yearOfBirth: year });
-    } else {
-      await addKid(kidName, year);
+    try {
+      setLoading(true);
+      const { createKid } = await import('@/lib/database');
+      await createKid({
+        parentId: user!.id,
+        name: kidName,
+        age: ageNum,
+        team: team || undefined,
+        position: position || undefined
+      });
+      await loadKids();
+      setModalVisible(false);
+      setKidName("");
+      setAge("");
+      setTeam("");
+      setPosition("");
+      setEditingKid(null);
+      Alert.alert('Success', 'Kid added successfully');
+    } catch (error) {
+      console.error('Failed to add kid:', error);
+      Alert.alert('Error', 'Failed to add kid');
+    } finally {
+      setLoading(false);
     }
-
-    setModalVisible(false);
-    setKidName("");
-    setYearOfBirth("");
-    setEditingKid(null);
   };
 
   const handleEditKid = (kid: typeof myKids[0]) => {
     setEditingKid(kid.id);
     setKidName(kid.name);
-    setYearOfBirth(kid.yearOfBirth.toString());
+    setAge(kid.age?.toString() || "");
+    setTeam(kid.team || "");
+    setPosition(kid.position || "");
     setModalVisible(true);
   };
 
@@ -63,12 +101,35 @@ export default function KidsScreen() {
       "Are you sure you want to remove this child?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => deleteKid(kidId) }
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const { deleteKid } = await import('@/lib/database');
+              await deleteKid(kidId);
+              await loadKids();
+              Alert.alert('Success', 'Kid deleted successfully');
+            } catch (error) {
+              console.error('Failed to delete kid:', error);
+              Alert.alert('Error', 'Failed to delete kid');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
       ]
     );
   };
 
-  const currentYear = new Date().getFullYear();
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.emptyText}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -93,13 +154,18 @@ export default function KidsScreen() {
                   <View style={styles.detailRow}>
                     <Calendar color="#666" size={16} />
                     <Text style={styles.detailText}>
-                      Born {kid.yearOfBirth} ({currentYear - kid.yearOfBirth} years old)
+                      {kid.age} years old
                     </Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Users color="#666" size={16} />
-                    <Text style={styles.detailText}>Team {kid.team}</Text>
+                    <Text style={styles.detailText}>Team: {kid.team || 'Not assigned'}</Text>
                   </View>
+                  {kid.position && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailText}>Position: {kid.position}</Text>
+                    </View>
+                  )}
                 </View>
               </View>
               <View style={styles.kidActions}>
@@ -130,12 +196,12 @@ export default function KidsScreen() {
         <Text style={styles.sectionTitle}>Team Rosters</Text>
         
         <View style={styles.teamCard}>
-          <Text style={styles.teamTitle}>Team A (10+ years)</Text>
+          <Text style={styles.teamTitle}>Team A Roster</Text>
           {teamARoster.length > 0 ? (
             teamARoster.map(kid => (
               <View key={kid.id} style={styles.rosterItem}>
                 <Text style={styles.rosterName}>{kid.name}</Text>
-                <Text style={styles.rosterAge}>{currentYear - kid.yearOfBirth} years</Text>
+                <Text style={styles.rosterAge}>{kid.age} years</Text>
               </View>
             ))
           ) : (
@@ -144,12 +210,12 @@ export default function KidsScreen() {
         </View>
 
         <View style={styles.teamCard}>
-          <Text style={styles.teamTitle}>Team B (Under 10)</Text>
+          <Text style={styles.teamTitle}>Team B Roster</Text>
           {teamBRoster.length > 0 ? (
             teamBRoster.map(kid => (
               <View key={kid.id} style={styles.rosterItem}>
                 <Text style={styles.rosterName}>{kid.name}</Text>
-                <Text style={styles.rosterAge}>{currentYear - kid.yearOfBirth} years</Text>
+                <Text style={styles.rosterAge}>{kid.age} years</Text>
               </View>
             ))
           ) : (
@@ -182,11 +248,25 @@ export default function KidsScreen() {
             
             <TextInput
               style={styles.modalInput}
-              placeholder="Year of Birth (e.g., 2015)"
-              value={yearOfBirth}
-              onChangeText={setYearOfBirth}
+              placeholder="Age (e.g., 8)"
+              value={age}
+              onChangeText={setAge}
               keyboardType="numeric"
-              maxLength={4}
+              maxLength={2}
+            />
+            
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Team (optional)"
+              value={team}
+              onChangeText={setTeam}
+            />
+            
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Position (optional)"
+              value={position}
+              onChangeText={setPosition}
             />
             
             <View style={styles.modalButtons}>
@@ -195,7 +275,9 @@ export default function KidsScreen() {
                 onPress={() => {
                   setModalVisible(false);
                   setKidName("");
-                  setYearOfBirth("");
+                  setAge("");
+                  setTeam("");
+                  setPosition("");
                   setEditingKid(null);
                 }}
               >
