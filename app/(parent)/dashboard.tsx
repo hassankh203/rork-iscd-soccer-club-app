@@ -1,14 +1,35 @@
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image } from "react-native";
 import { useLocalAuth } from "@/hooks/local-auth-context";
 import { useApp } from "@/hooks/app-context";
+import { useLocalData } from "@/hooks/local-data-context";
 import { Users, Calendar, Bell, Camera, LogOut } from "lucide-react-native";
 import { router } from "expo-router";
+import { useState, useEffect } from "react";
 
 export default function ParentDashboard() {
   const { user, signOut } = useLocalAuth();
-  const { kids, trainingPolls, announcements, media, unreadCounts } = useApp();
+  const { trainingPolls, announcements, media, unreadCounts } = useApp();
+  const { getKids } = useLocalData();
+  const [myKids, setMyKids] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const myKids = kids.filter(k => k.parentId === user?.id);
+  useEffect(() => {
+    const loadKids = async () => {
+      try {
+        setLoading(true);
+        const kidsData = await getKids();
+        setMyKids(kidsData);
+      } catch (error) {
+        console.error('Failed to load kids:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      loadKids();
+    }
+  }, [user, getKids]);
   const latestMedia = media[0];
   const recentPolls = trainingPolls.slice(-3);
   const recentAnnouncements = announcements.slice(-3);
@@ -17,6 +38,14 @@ export default function ParentDashboard() {
     await signOut();
     router.replace('/');
   };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.emptyText}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
