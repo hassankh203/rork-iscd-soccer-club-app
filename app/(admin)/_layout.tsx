@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { LayoutDashboard, Users, DollarSign, MessageSquare, Settings, Camera } from "lucide-react-native";
+import { LayoutDashboard, Users, DollarSign, MessageSquare, Settings, Camera, Shield } from "lucide-react-native";
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { useApp } from "@/hooks/app-context";
@@ -82,6 +82,15 @@ export default function AdminLayout() {
           title: "Communicate",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon name={MessageSquare} color={color} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="teams"
+        options={{
+          title: "Teams",
+          tabBarIcon: ({ color, focused }) => (
+            <TabBarIcon name={Shield} color={color} focused={focused} />
           ),
         }}
       />
