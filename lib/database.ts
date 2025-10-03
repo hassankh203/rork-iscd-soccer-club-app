@@ -719,6 +719,8 @@ export const createKid = async (kidData: Omit<Kid, 'id' | 'createdAt'>): Promise
   const id = generateId();
   const now = new Date().toISOString();
   
+  console.log('📝 Creating kid with data:', JSON.stringify(kidData, null, 2));
+  
   if (Platform.OS === 'web') {
     const kids = await getStoredKids();
     const newKid: Kid = {
@@ -728,13 +730,27 @@ export const createKid = async (kidData: Omit<Kid, 'id' | 'createdAt'>): Promise
     };
     kids.push(newKid);
     await AsyncStorage.setItem('kids', JSON.stringify(kids));
+    console.log('✅ Kid created successfully (web):', newKid);
     return newKid;
   }
   
-  await db.runAsync(
-    'INSERT INTO kids (id, parent_id, name, age, team, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [id, kidData.parentId, kidData.name, kidData.age ?? null, kidData.team ?? null, kidData.position ?? null, now, now]
-  );
+  try {
+    const age = kidData.age !== undefined ? kidData.age : null;
+    const team = kidData.team || null;
+    const position = kidData.position || null;
+    
+    console.log('📊 SQL parameters:', { id, parentId: kidData.parentId, name: kidData.name, age, team, position, now });
+    
+    await db.runAsync(
+      'INSERT INTO kids (id, parent_id, name, age, team, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, kidData.parentId, kidData.name, age, team, position, now, now]
+    );
+    
+    console.log('✅ Kid created successfully (native)');
+  } catch (error) {
+    console.error('❌ Error creating kid in database:', error);
+    throw error;
+  }
   
   return {
     id,
