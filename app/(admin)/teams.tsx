@@ -32,6 +32,9 @@ export default function TeamsScreen() {
       console.log('📋 Loading kids for teams...');
       const data = await getKids();
       console.log('✅ Kids loaded:', data);
+      console.log('📊 Total kids:', data.length);
+      console.log('📊 Kids with teams:', data.filter(k => k.team).length);
+      console.log('📊 Team assignments:', data.map(k => ({ name: k.name, team: k.team })));
       setKids(data);
     } catch (error) {
       console.error('❌ Error loading kids:', error);
