@@ -20,7 +20,7 @@ export default function KidsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingKid, setEditingKid] = useState<string | null>(null);
   const [kidName, setKidName] = useState("");
-  const [age, setAge] = useState("");
+  const [yearOfBirth, setYearOfBirth] = useState("");
   const [position, setPosition] = useState("");
   const [kids, setKids] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,18 +49,27 @@ export default function KidsScreen() {
   const teamBRoster = kids.filter(k => k.age && k.age < 10);
 
   const handleAddKid = async () => {
-    if (!kidName || !age) {
+    if (!kidName || !yearOfBirth) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
 
-    const ageNum = parseInt(age);
-    if (isNaN(ageNum) || ageNum < 4 || ageNum > 18) {
-      Alert.alert("Error", "Please enter a valid age (4-18)");
+    const birthYear = parseInt(yearOfBirth);
+    const currentYear = new Date().getFullYear();
+    
+    if (isNaN(birthYear) || birthYear < 1900 || birthYear > currentYear) {
+      Alert.alert("Error", "Please enter a valid year of birth");
       return;
     }
 
-    const autoTeam = ageNum >= 10 ? 'A' : 'B';
+    const calculatedAge = currentYear - birthYear;
+    
+    if (calculatedAge < 4 || calculatedAge > 18) {
+      Alert.alert("Error", "Child must be between 4 and 18 years old");
+      return;
+    }
+
+    const autoTeam = calculatedAge >= 10 ? 'A' : 'B';
 
     try {
       setLoading(true);
@@ -69,7 +78,7 @@ export default function KidsScreen() {
       if (editingKid) {
         await updateKid(editingKid, {
           name: kidName,
-          age: ageNum,
+          age: calculatedAge,
           team: autoTeam,
           position: position || undefined
         });
@@ -77,7 +86,7 @@ export default function KidsScreen() {
         await createKid({
           parentId: user!.id,
           name: kidName,
-          age: ageNum,
+          age: calculatedAge,
           team: autoTeam,
           position: position || undefined
         });
@@ -86,7 +95,7 @@ export default function KidsScreen() {
       await loadKids();
       setModalVisible(false);
       setKidName("");
-      setAge("");
+      setYearOfBirth("");
       setPosition("");
       setEditingKid(null);
       Alert.alert('Success', editingKid ? 'Kid updated successfully' : 'Kid added successfully');
@@ -101,7 +110,9 @@ export default function KidsScreen() {
   const handleEditKid = (kid: typeof myKids[0]) => {
     setEditingKid(kid.id);
     setKidName(kid.name);
-    setAge(kid.age?.toString() || "");
+    const currentYear = new Date().getFullYear();
+    const birthYear = kid.age ? currentYear - kid.age : "";
+    setYearOfBirth(birthYear.toString());
     setPosition(kid.position || "");
     setModalVisible(true);
   };
@@ -265,11 +276,11 @@ export default function KidsScreen() {
             
             <TextInput
               style={styles.modalInput}
-              placeholder="Age (e.g., 8)"
-              value={age}
-              onChangeText={setAge}
+              placeholder="Year of Birth (e.g., 2015)"
+              value={yearOfBirth}
+              onChangeText={setYearOfBirth}
               keyboardType="numeric"
-              maxLength={2}
+              maxLength={4}
             />
             
             <View style={styles.infoBox}>
@@ -293,7 +304,7 @@ export default function KidsScreen() {
                 onPress={() => {
                   setModalVisible(false);
                   setKidName("");
-                  setAge("");
+                  setYearOfBirth("");
                   setPosition("");
                   setEditingKid(null);
                 }}
