@@ -21,7 +21,7 @@ interface Kid {
 }
 
 export default function TeamsScreen() {
-  const { getKids } = useLocalData();
+  const { getAllKidsForTeams } = useLocalData();
   const [kids, setKids] = useState<Kid[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -29,8 +29,8 @@ export default function TeamsScreen() {
 
   const loadKids = async () => {
     try {
-      console.log('📋 Loading kids for teams...');
-      const data = await getKids();
+      console.log('📋 Loading ALL kids for teams page...');
+      const data = await getAllKidsForTeams();
       console.log('✅ Kids loaded:', data);
       console.log('📊 Total kids:', data.length);
       console.log('📊 Kids with teams:', data.filter(k => k.team).length);

@@ -52,6 +52,14 @@ export const [LocalDataProvider, useLocalData] = createContextHook(() => {
     }
   }, [user]);
 
+  const getAllKidsForTeams = useCallback(async (): Promise<DbKid[]> => {
+    if (!user) throw new Error('User not authenticated');
+    console.log('🏆 Getting all kids for teams page...');
+    const allKids = await getAllKids();
+    console.log('✅ Retrieved all kids for teams:', allKids.length);
+    return allKids;
+  }, [user]);
+
   // Communications operations
   const sendMessage = useCallback(async (data: { 
     recipientId?: string; 
@@ -173,6 +181,7 @@ export const [LocalDataProvider, useLocalData] = createContextHook(() => {
     // Kids
     addKid,
     getKids,
+    getAllKidsForTeams,
     
     // Communications
     sendMessage,
@@ -194,6 +203,7 @@ export const [LocalDataProvider, useLocalData] = createContextHook(() => {
   }), [
     addKid,
     getKids,
+    getAllKidsForTeams,
     sendMessage,
     getMessages,
     addPayment,
