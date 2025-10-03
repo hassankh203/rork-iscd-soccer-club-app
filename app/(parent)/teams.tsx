@@ -29,15 +29,20 @@ export default function TeamsScreen() {
 
   const loadKids = async () => {
     try {
-      console.log('📋 Loading ALL kids for teams page...');
+      console.log('📋 [TEAMS PAGE] Loading ALL kids for teams page...');
       const data = await getAllKidsForTeams();
-      console.log('✅ Kids loaded:', data);
-      console.log('📊 Total kids:', data.length);
-      console.log('📊 Kids with teams:', data.filter(k => k.team).length);
-      console.log('📊 Team assignments:', data.map(k => ({ name: k.name, team: k.team })));
+      console.log('✅ [TEAMS PAGE] Kids loaded from database:', JSON.stringify(data, null, 2));
+      console.log('📊 [TEAMS PAGE] Total kids:', data.length);
+      console.log('📊 [TEAMS PAGE] Kids with teams:', data.filter(k => k.team).length);
+      console.log('📊 [TEAMS PAGE] Team assignments:', data.map(k => ({ name: k.name, team: k.team, parentId: k.parentId })));
+      
+      if (data.length === 0) {
+        console.warn('⚠️ [TEAMS PAGE] No kids found in database! This might be a data issue.');
+      }
+      
       setKids(data);
     } catch (error) {
-      console.error('❌ Error loading kids:', error);
+      console.error('❌ [TEAMS PAGE] Error loading kids:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
