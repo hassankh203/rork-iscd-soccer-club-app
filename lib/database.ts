@@ -735,20 +735,26 @@ export const createKid = async (kidData: Omit<Kid, 'id' | 'createdAt'>): Promise
   }
   
   try {
-    const age = kidData.age !== undefined ? kidData.age : null;
-    const team = kidData.team || null;
-    const position = kidData.position || null;
-    
-    console.log('📊 SQL parameters:', { id, parentId: kidData.parentId, name: kidData.name, age, team, position, now });
+    console.log('📊 SQL parameters:', { id, parentId: kidData.parentId, name: kidData.name, age: kidData.age, team: kidData.team, position: kidData.position, now });
     
     await db.runAsync(
       'INSERT INTO kids (id, parent_id, name, age, team, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      [id, kidData.parentId, kidData.name, age, team, position, now, now]
+      [
+        id, 
+        kidData.parentId, 
+        kidData.name, 
+        kidData.age ?? null, 
+        kidData.team ?? null, 
+        kidData.position ?? null, 
+        now, 
+        now
+      ]
     );
     
     console.log('✅ Kid created successfully (native)');
   } catch (error) {
     console.error('❌ Error creating kid in database:', error);
+    console.error('❌ Error details:', JSON.stringify(error, null, 2));
     throw error;
   }
   
