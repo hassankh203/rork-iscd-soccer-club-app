@@ -58,9 +58,9 @@ export default function TeamsScreen() {
     loadKids();
   };
 
-  const teamAKids = kids.filter(kid => kid.team?.toUpperCase() === 'A');
-  const teamBKids = kids.filter(kid => kid.team?.toUpperCase() === 'B');
-  const unassignedKids = kids.filter(kid => !kid.team || (kid.team.toUpperCase() !== 'A' && kid.team.toUpperCase() !== 'B'));
+  const teamAKids = kids.filter(kid => kid.age && kid.age >= 10);
+  const teamBKids = kids.filter(kid => kid.age && kid.age < 10);
+  const unassignedKids = kids.filter(kid => !kid.age);
 
   const filteredKids = selectedTeam === 'all' 
     ? kids 
