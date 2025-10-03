@@ -743,9 +743,9 @@ export const createKid = async (kidData: Omit<Kid, 'id' | 'createdAt'>): Promise
         id, 
         kidData.parentId, 
         kidData.name, 
-        kidData.age ?? null, 
-        kidData.team ?? null, 
-        kidData.position ?? null, 
+        kidData.age !== undefined ? kidData.age : null, 
+        kidData.team !== undefined ? kidData.team : null, 
+        kidData.position !== undefined ? kidData.position : null, 
         now, 
         now
       ]
