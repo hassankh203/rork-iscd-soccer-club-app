@@ -21,7 +21,6 @@ export default function KidsScreen() {
   const [editingKid, setEditingKid] = useState<string | null>(null);
   const [kidName, setKidName] = useState("");
   const [age, setAge] = useState("");
-  const [team, setTeam] = useState("");
   const [position, setPosition] = useState("");
   const [kids, setKids] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,8 +44,9 @@ export default function KidsScreen() {
   }, []);
 
   const myKids = kids.filter(k => k.parentId === user?.id);
-  const teamARoster = kids.filter(k => k.team === 'A' || k.team === 'Tigers' || k.team === 'Eagles' || k.team === 'Panthers');
-  const teamBRoster = kids.filter(k => k.team === 'B' || k.team === 'Lions' || k.team === 'Cubs');
+  
+  const teamARoster = kids.filter(k => k.age && k.age >= 10);
+  const teamBRoster = kids.filter(k => k.age && k.age < 10);
 
   const handleAddKid = async () => {
     if (!kidName || !age) {
@@ -60,27 +60,39 @@ export default function KidsScreen() {
       return;
     }
 
+    const autoTeam = ageNum >= 10 ? 'A' : 'B';
+
     try {
       setLoading(true);
-      const { createKid } = await import('@/lib/database');
-      await createKid({
-        parentId: user!.id,
-        name: kidName,
-        age: ageNum,
-        team: team || undefined,
-        position: position || undefined
-      });
+      const { createKid, updateKid } = await import('@/lib/database');
+      
+      if (editingKid) {
+        await updateKid(editingKid, {
+          name: kidName,
+          age: ageNum,
+          team: autoTeam,
+          position: position || undefined
+        });
+      } else {
+        await createKid({
+          parentId: user!.id,
+          name: kidName,
+          age: ageNum,
+          team: autoTeam,
+          position: position || undefined
+        });
+      }
+      
       await loadKids();
       setModalVisible(false);
       setKidName("");
       setAge("");
-      setTeam("");
       setPosition("");
       setEditingKid(null);
-      Alert.alert('Success', 'Kid added successfully');
+      Alert.alert('Success', editingKid ? 'Kid updated successfully' : 'Kid added successfully');
     } catch (error) {
-      console.error('Failed to add kid:', error);
-      Alert.alert('Error', 'Failed to add kid');
+      console.error('Failed to save kid:', error);
+      Alert.alert('Error', 'Failed to save kid');
     } finally {
       setLoading(false);
     }
@@ -90,7 +102,6 @@ export default function KidsScreen() {
     setEditingKid(kid.id);
     setKidName(kid.name);
     setAge(kid.age?.toString() || "");
-    setTeam(kid.team || "");
     setPosition(kid.position || "");
     setModalVisible(true);
   };
@@ -196,7 +207,10 @@ export default function KidsScreen() {
         <Text style={styles.sectionTitle}>Team Rosters</Text>
         
         <View style={styles.teamCard}>
-          <Text style={styles.teamTitle}>Team A Roster</Text>
+          <View style={styles.teamHeader}>
+            <Text style={styles.teamTitle}>Team A Roster</Text>
+            <Text style={styles.teamSubtitle}>Ages 10+</Text>
+          </View>
           {teamARoster.length > 0 ? (
             teamARoster.map(kid => (
               <View key={kid.id} style={styles.rosterItem}>
@@ -210,7 +224,10 @@ export default function KidsScreen() {
         </View>
 
         <View style={styles.teamCard}>
-          <Text style={styles.teamTitle}>Team B Roster</Text>
+          <View style={styles.teamHeader}>
+            <Text style={styles.teamTitle}>Team B Roster</Text>
+            <Text style={styles.teamSubtitle}>Under 10</Text>
+          </View>
           {teamBRoster.length > 0 ? (
             teamBRoster.map(kid => (
               <View key={kid.id} style={styles.rosterItem}>
@@ -255,12 +272,13 @@ export default function KidsScreen() {
               maxLength={2}
             />
             
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Team (optional)"
-              value={team}
-              onChangeText={setTeam}
-            />
+            <View style={styles.infoBox}>
+              <Text style={styles.infoText}>
+                Team will be automatically assigned based on age:
+                {"\n"}• Team A: 10+ years old
+                {"\n"}• Team B: Under 10 years old
+              </Text>
+            </View>
             
             <TextInput
               style={styles.modalInput}
@@ -276,7 +294,6 @@ export default function KidsScreen() {
                   setModalVisible(false);
                   setKidName("");
                   setAge("");
-                  setTeam("");
                   setPosition("");
                   setEditingKid(null);
                 }}
@@ -399,11 +416,29 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
   },
+  teamHeader: {
+    marginBottom: 12,
+  },
   teamTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1B5E20',
-    marginBottom: 12,
+  },
+  teamSubtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  infoBox: {
+    backgroundColor: '#E8F5E9',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  infoText: {
+    fontSize: 13,
+    color: '#1B5E20',
+    lineHeight: 18,
   },
   rosterItem: {
     flexDirection: 'row',
