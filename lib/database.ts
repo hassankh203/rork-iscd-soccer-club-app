@@ -733,7 +733,7 @@ export const createKid = async (kidData: Omit<Kid, 'id' | 'createdAt'>): Promise
   
   await db.runAsync(
     'INSERT INTO kids (id, parent_id, name, age, team, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-    [id, kidData.parentId, kidData.name, kidData.age || null, kidData.team || null, kidData.position || null, now, now]
+    [id, kidData.parentId, kidData.name, kidData.age ?? null, kidData.team ?? null, kidData.position ?? null, now, now]
   );
   
   return {
