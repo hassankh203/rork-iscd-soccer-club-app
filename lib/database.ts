@@ -735,18 +735,22 @@ export const createKid = async (kidData: Omit<Kid, 'id' | 'createdAt'>): Promise
   }
   
   try {
+    const age = kidData.age ?? null;
+    const team = (kidData.team && kidData.team.trim() !== '') ? kidData.team : null;
+    const position = (kidData.position && kidData.position.trim() !== '') ? kidData.position : null;
+    
     const sqlParams = [
       id, 
       kidData.parentId, 
       kidData.name, 
-      kidData.age !== undefined && kidData.age !== null ? kidData.age : null, 
-      kidData.team !== undefined && kidData.team !== null && kidData.team !== '' ? kidData.team : null, 
-      kidData.position !== undefined && kidData.position !== null && kidData.position !== '' ? kidData.position : null, 
+      age, 
+      team, 
+      position, 
       now, 
       now
     ];
     
-    console.log('📊 SQL parameters:', sqlParams);
+    console.log('📊 SQL parameters:', JSON.stringify(sqlParams, null, 2));
     
     await db.runAsync(
       'INSERT INTO kids (id, parent_id, name, age, team, position, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
