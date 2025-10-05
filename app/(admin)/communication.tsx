@@ -418,22 +418,24 @@ export default function AdminCommunicationScreen() {
         animationType="slide"
         transparent={true}
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onRequestClose={closeModal}
       >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <Pressable 
           style={styles.modalOverlay}
+          onPress={closeModal}
         >
-          <Pressable 
-            style={styles.modalOverlay}
-            onPress={closeModal}
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.modalKeyboardView}
           >
             <ScrollView 
               contentContainerStyle={styles.modalScrollContent}
               keyboardShouldPersistTaps="handled"
             >
-              <Pressable onPress={(e) => e.stopPropagation()}>
-                <View style={styles.modalContent}>
+              <Pressable 
+                style={styles.modalContent}
+                onPress={(e) => e.stopPropagation()}
+              >
             {modalType === 'poll' && (
               <>
                 <Text style={styles.modalTitle}>Create Training Poll</Text>
@@ -597,11 +599,10 @@ export default function AdminCommunicationScreen() {
                 </TouchableOpacity>
               </>
             )}
-                </View>
               </Pressable>
             </ScrollView>
-          </Pressable>
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </Pressable>
       </Modal>
     </View>
   );
@@ -741,6 +742,9 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalKeyboardView: {
+    flex: 1,
   },
   modalScrollContent: {
     flexGrow: 1,
