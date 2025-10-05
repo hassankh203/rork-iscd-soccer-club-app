@@ -101,7 +101,8 @@ export default function KidsScreen() {
       Alert.alert('Success', editingKid ? 'Kid updated successfully' : 'Kid added successfully');
     } catch (error) {
       console.error('Failed to save kid:', error);
-      Alert.alert('Error', 'Failed to save kid');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save kid';
+      Alert.alert('Error', `Failed to save kid: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
