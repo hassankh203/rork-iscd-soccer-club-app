@@ -58,9 +58,9 @@ export default function TeamsScreen() {
     loadKids();
   };
 
-  const teamAKids = kids.filter(kid => kid.age && kid.age >= 10);
-  const teamBKids = kids.filter(kid => kid.age && kid.age < 10);
-  const unassignedKids = kids.filter(kid => !kid.age);
+  const teamAKids = kids.filter(kid => kid.team === 'A');
+  const teamBKids = kids.filter(kid => kid.team === 'B');
+  const unassignedKids = kids.filter(kid => !kid.team || (kid.team !== 'A' && kid.team !== 'B'));
 
   const filteredKids = selectedTeam === 'all' 
     ? kids 
