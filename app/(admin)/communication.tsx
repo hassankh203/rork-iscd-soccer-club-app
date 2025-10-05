@@ -444,15 +444,18 @@ export default function AdminCommunicationScreen() {
                   onChangeText={setPollTitle}
                 />
                 
-                <TouchableOpacity 
+                <Pressable 
                   style={styles.datePickerButton}
-                  onPress={() => setShowDatePicker(true)}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    setShowDatePicker(true);
+                  }}
                 >
                   <Calendar color="#1B5E20" size={20} />
                   <Text style={styles.datePickerButtonText}>
                     {pollDate || 'Select Date'}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
                 
                 {showDatePicker && (
                   <DateTimePicker
@@ -465,12 +468,15 @@ export default function AdminCommunicationScreen() {
                 )}
                 
                 {Platform.OS === 'ios' && showDatePicker && (
-                  <TouchableOpacity 
+                  <Pressable 
                     style={styles.datePickerDoneButton}
-                    onPress={() => setShowDatePicker(false)}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setShowDatePicker(false);
+                    }}
                   >
                     <Text style={styles.datePickerDoneText}>Done</Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
                 
                 <TextInput
