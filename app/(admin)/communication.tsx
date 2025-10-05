@@ -432,7 +432,8 @@ export default function AdminCommunicationScreen() {
               contentContainerStyle={styles.modalScrollContent}
               keyboardShouldPersistTaps="handled"
             >
-              <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+              <Pressable onPress={(e) => e.stopPropagation()}>
+                <View style={styles.modalContent}>
             {modalType === 'poll' && (
               <>
                 <Text style={styles.modalTitle}>Create Training Poll</Text>
@@ -590,7 +591,8 @@ export default function AdminCommunicationScreen() {
                 </TouchableOpacity>
               </>
             )}
-              </View>
+                </View>
+              </Pressable>
             </ScrollView>
           </Pressable>
         </KeyboardAvoidingView>
