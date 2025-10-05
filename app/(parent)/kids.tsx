@@ -263,8 +263,9 @@ export default function KidsScreen() {
           style={styles.modalOverlay}
           onPress={() => setModalVisible(false)}
         >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
-            <Text style={styles.modalTitle}>
+          <Pressable onPress={(e) => e.stopPropagation()}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>
               {editingKid ? 'Edit Kid' : 'Add New Kid'}
             </Text>
             
@@ -322,7 +323,8 @@ export default function KidsScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
+            </View>
+          </Pressable>
         </Pressable>
       </Modal>
     </ScrollView>
